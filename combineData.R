@@ -18,30 +18,37 @@ speciesList <- read_html(SPECIES_TABLE_URL) %>%
   
 
 weather <- read_csv(WEATHER_PATH, col_types = cols_only(
-  StateNum = col_integer(),
-  Route = col_integer(),
-  Year = col_integer(),
-  ObsN = col_integer()
+  StateNum = col_number(),
+  Route = col_number(),
+  Year = col_number(),
+  ObsN = col_number()
 )) %>%
   rename(ObserverId = ObsN)
+
+addYearInfested <- . %>%
+  group_by(StateNum, Route) %>%
+  arrange(Year, .by_group=T) %>%
+  mutate(YearInfested = min(if_else(Infested, Year, Inf))) %>%
+  ungroup()
 
 infestations <- read_rds(INFESTATIONS_PATH) %>%
   extract(RouteId, c("StateNum", "Route"), "(..)(...)", convert=T) %>%
   select(-Infested) %>%
   pivot_longer(`2018`:`1951`, names_to = "Year", values_to = "Infested",
-               names_transform = list(Year = as.integer),
+               names_transform = list(Year = as.numeric),
                values_ptypes = list(Infested = logical())) %>%
-  select(StateNum, Route, Year, Infested)
+  addYearInfested() %>%
+  select(StateNum, Route, Year, Infested, YearInfested)
 
 stateData <- STATE_DATA_PATH %>%
   dir_ls() %>%
   map(read_csv, col_types = cols_only(
-    Year = col_integer(),
-    StateNum = col_integer(),
-    Route = col_integer(),
-    RPID = col_integer(),
-    AOU = col_integer(),
-    SpeciesTotal = col_integer()
+    Year = col_number(),
+    StateNum = col_number(),
+    Route = col_number(),
+    RPID = col_number(),
+    AOU = col_number(),
+    SpeciesTotal = col_number()
   )) %>%
   bind_rows() %>%
   rename(ObsType = RPID, SpeciesId = AOU)
