@@ -7,6 +7,7 @@ INFESTATIONS_PATH <- "data/src/infestations.rds"
 WEATHER_PATH <- "data/src/weather.csv"
 SPECIES_TABLE_URL <- "https://www.pwrc.usgs.gov/BBl/manual/speclist.cfm"
 
+## Import: Species codes and names --------------------
 speciesList <- read_html(SPECIES_TABLE_URL) %>%
   html_nodes("table") %>%
   html_table(fill = T) %>%
@@ -16,7 +17,7 @@ speciesList <- read_html(SPECIES_TABLE_URL) %>%
          SpeciesName = `Common Name`,
          SpeciesSciName = `Scientific Name`)
   
-
+## Import: Observer info  --------------------
 weather <- read_csv(WEATHER_PATH, col_types = cols_only(
   StateNum = col_number(),
   Route = col_number(),
@@ -24,6 +25,9 @@ weather <- read_csv(WEATHER_PATH, col_types = cols_only(
   ObsN = col_number()
 )) %>%
   rename(ObserverId = ObsN)
+
+## Import: Infestation info  --------------------
+# table with years when adelgid arrived in different counties
 
 addYearInfested <- . %>%
   group_by(StateNum, Route) %>%
@@ -38,8 +42,9 @@ infestations <- read_rds(INFESTATIONS_PATH) %>%
                names_transform = list(Year = as.numeric),
                values_ptypes = list(Infested = logical())) %>%
   addYearInfested() %>%
-  select(StateNum, Route, Year, Infested, YearInfested)
+  select(RouteId,StateNum, Route, Year, Infested, YearInfested)
 
+## Import: bird data for states --------------------
 stateData <- STATE_DATA_PATH %>%
   dir_ls() %>%
   map(read_csv, col_types = cols_only(
@@ -51,11 +56,15 @@ stateData <- STATE_DATA_PATH %>%
     SpeciesTotal = col_number()
   )) %>%
   bind_rows() %>%
-  rename(ObsType = RPID, SpeciesId = AOU)
+  rename(ObsType = RPID, SpeciesId = AOU) %>% 
+  mutate(RouteID = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
+  relocate(RouteID)
 
+## Combine data sets  --------------------
+# single tibble with all the information
 BirdHWA <- stateData %>%
   left_join(infestations, by = c("StateNum", "Route", "Year")) %>%
   left_join(speciesList, by = c("SpeciesId")) %>%
-  left_join(weather, by = c("StateNum", "Route", "Year"))
+  left_join(weather, by = c("StateNum", "Route", "Year")) 
 
 save(BirdHWA, file = 'data/BirdHWA.rda') 
