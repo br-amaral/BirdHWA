@@ -5,6 +5,7 @@ library(rvest)
 STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
 WEATHER_PATH <- "data/src/weather.csv"
+LATLONG_PATH <- "data/src/route_coor.csv"
 SPECIES_TABLE_URL <- "https://www.pwrc.usgs.gov/BBl/manual/speclist.cfm"
 
 ## Import: Species codes and names --------------------
@@ -22,9 +23,11 @@ weather <- read_csv(WEATHER_PATH, col_types = cols_only(
   StateNum = col_number(),
   Route = col_number(),
   Year = col_number(),
-  ObsN = col_number()
+  ObsN = col_number(),
+  RPID = col_number()
 )) %>%
-  rename(ObserverId = ObsN)
+  rename(ObserverId = ObsN,
+         ObsType = RPID)
 
 ## Import: Infestation info  --------------------
 # table with years when adelgid arrived in different counties
@@ -36,7 +39,7 @@ addYearInfested <- . %>%
   ungroup()
 
 infestations <- read_rds(INFESTATIONS_PATH) %>%
-  extract(RouteId, c("StateNum", "Route"), "(..)(...)", convert=T) %>%
+  extract(RouteId, c("StateNum", "Route"), "(..)(...)", convert=T, remove= FALSE) %>%
   select(-Infested) %>%
   pivot_longer(`2018`:`1951`, names_to = "Year", values_to = "Infested",
                names_transform = list(Year = as.numeric),
@@ -57,14 +60,26 @@ stateData <- STATE_DATA_PATH %>%
   )) %>%
   bind_rows() %>%
   rename(ObsType = RPID, SpeciesId = AOU) %>% 
-  mutate(RouteID = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
-  relocate(RouteID)
+  mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
+  relocate(RouteId)
+
+## Import: lat long coordinates for routes --------------------
+latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
+  StateNum = col_number(),
+  Route = col_number(),
+  Latitude = col_number(),
+  Longitude = col_number())) %>%
+  mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
+  relocate(RouteId)
 
 ## Combine data sets  --------------------
 # single tibble with all the information
 BirdHWA <- stateData %>%
-  left_join(infestations, by = c("StateNum", "Route", "Year")) %>%
+  left_join(infestations, by = c("StateNum", "Route", "Year", "RouteId")) %>%
   left_join(speciesList, by = c("SpeciesId")) %>%
-  left_join(weather, by = c("StateNum", "Route", "Year")) 
+  left_join(weather, by = c("StateNum", "Route", "Year","ObsType")) %>% 
+  left_join(latlong, by = c("StateNum", "Route", "RouteId"))
+
+if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
 
 save(BirdHWA, file = 'data/BirdHWA.rda') 
