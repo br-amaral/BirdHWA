@@ -61,13 +61,14 @@ run_combinations <- function(species){
     formula <- formulas[[i]]
     for(j in 1:length(offsets)){
       off <- offsets[j]
-      SPECIES_MOD_DAT <- paste("data/species/", species, ".rds",sep= "")
+      SPECIES_MOD_DAT <- paste("data/species/", species, ".rds", sep= "")
       BIRDtab <- readRDS(SPECIES_MOD_DAT)
-      resu <- run_model(off,BIRDtab,formula)
-      name <- paste(species,"_model",i,"_",off,"yrs", sep="")
+      resu <- 44#run_model(off,BIRDtab,formula)
+      name <- paste(species, "_model", i, "_", off, "yrs", sep= "")
       assign(name,resu)
       print(name)
-      name2 <- paste("data/models_res/",name,".RDS", sep="")
+      name2 <- paste("data/models_res/", species, "/", name, ".RDS", sep= "")
+      dir.create(paste("data/models_res/", species, sep=""))
       saveRDS(object = get(name), file = name2)
     }
   }
