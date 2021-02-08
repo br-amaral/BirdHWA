@@ -9,7 +9,7 @@ STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
 WEATHER_PATH <- "data/src/weather.csv"
 LATLONG_PATH <- "data/src/route_coor.csv"
-HEXAGON_PATH <- "route_hex.rds"
+HEXAGON_PATH <- "data/route_hex.rds"
 SPECIES_TABLE_URL <- "https://www.pwrc.usgs.gov/BBl/manual/speclist.cfm"
 
 ## Import: Species codes and names --------------------
@@ -90,6 +90,7 @@ BirdHWA <- stateData %>%
 if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
 
 ## Combine data sets: add temperature data -------------------
+# temperature data is in °C * 10
 climate <- getData('worldclim', var = 'bio', res = 2.5)
 clim <- climate[[c(6,11)]]
 names(clim) <- c("minTemp","meanTemp")   ## Minimum and Mean Temperature of Coldest Quarter
@@ -107,9 +108,7 @@ tempDF <- tempDF %>%
   dplyr::select(`RouteId`,
                 `minTemp`,
                 `meanTemp`) %>% 
-  distinct() %>% 
-  mutate(minTemp = scale(minTemp),
-         meanTemp = scale(meanTemp))
+  distinct() 
 
 for(i in 1:nrow(tempDF)){
   if(nchar(tempDF$RouteId[i]) != 5) {
@@ -124,7 +123,9 @@ route_hex <- read_rds(HEXAGON_PATH)
 
 BirdHWA <- BirdHWA %>%
   left_join(tempDF, by = c("RouteId")) %>% 
-  left_join(route_hex, by= "RouteId")
+  left_join(route_hex, by= "RouteId") %>% 
+  mutate(sd_tempMi = sd(minTemp),
+         sd_tempMe = sd(meanTemp))
 
 ## Save!  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
