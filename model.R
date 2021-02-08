@@ -63,7 +63,7 @@ run_combinations <- function(species){
       off <- offsets[j]
       SPECIES_MOD_DAT <- paste("data/species/", species, ".rds", sep= "")
       BIRDtab <- readRDS(SPECIES_MOD_DAT)
-      resu <- 44#run_model(off,BIRDtab,formula)
+      resu <- run_model(off,BIRDtab,formula)
       name <- paste(species, "_model", i, "_", off, "yrs", sep= "")
       assign(name,resu)
       print(name)
@@ -74,7 +74,7 @@ run_combinations <- function(species){
   }
 }
 
-
+\
 run_combinations("MODO")
 
 
