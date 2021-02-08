@@ -1,11 +1,15 @@
+# check why some infestation years are inf and NA
+
 library(tidyverse)
 library(fs)
 library(rvest)
+library(raster)
 
 STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
 WEATHER_PATH <- "data/src/weather.csv"
 LATLONG_PATH <- "data/src/route_coor.csv"
+HEXAGON_PATH <- "route_hex.rds"
 SPECIES_TABLE_URL <- "https://www.pwrc.usgs.gov/BBl/manual/speclist.cfm"
 
 ## Import: Species codes and names --------------------
@@ -13,10 +17,10 @@ speciesList <- read_html(SPECIES_TABLE_URL) %>%
   html_nodes("table") %>%
   html_table(fill = T) %>%
   flatten_df() %>%
-  select(SpeciesId = `Species Number`,
-         SpeciesCode = `Alpha Code`,
-         SpeciesName = `Common Name`,
-         SpeciesSciName = `Scientific Name`)
+  dplyr::select(SpeciesId = `Species Number`,
+                SpeciesCode = `Alpha Code`,
+                SpeciesName = `Common Name`,
+                SpeciesSciName = `Scientific Name`)
   
 ## Import: Observer info  --------------------
 weather <- read_csv(WEATHER_PATH, col_types = cols_only(
@@ -39,13 +43,15 @@ addYearInfested <- . %>%
   ungroup()
 
 infestations <- read_rds(INFESTATIONS_PATH) %>%
-  extract(RouteId, c("StateNum", "Route"), "(..)(...)", convert=T, remove= FALSE) %>%
-  select(-Infested) %>%
+  tidyr::extract(RouteId, c("StateNum", "Route"), "(..)(...)", convert=T, remove= FALSE) %>%
+  dplyr::select(-Infested) %>%
   pivot_longer(`2018`:`1951`, names_to = "Year", values_to = "Infested",
                names_transform = list(Year = as.numeric),
                values_ptypes = list(Infested = logical())) %>%
   addYearInfested() %>%
-  select(RouteId,StateNum, Route, Year, Infested, YearInfested)
+  dplyr::select(RouteId,StateNum, Route, Year, Infested, YearInfested)
+
+years_with_data <- sort(unique(infestations$Year))
 
 ## Import: bird data for states --------------------
 stateData <- STATE_DATA_PATH %>%
@@ -61,7 +67,8 @@ stateData <- STATE_DATA_PATH %>%
   bind_rows() %>%
   rename(ObsType = RPID, SpeciesId = AOU) %>% 
   mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
-  relocate(RouteId)
+  relocate(RouteId) %>% 
+  filter(Year %in% years_with_data)
 
 ## Import: lat long coordinates for routes --------------------
 latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
@@ -72,7 +79,7 @@ latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
   mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
   relocate(RouteId)
 
-## Combine data sets  --------------------
+## Combine data sets: infestation, species, observer and lat long  --------------------
 # single tibble with all the information
 BirdHWA <- stateData %>%
   left_join(infestations, by = c("StateNum", "Route", "Year", "RouteId")) %>%
@@ -82,4 +89,44 @@ BirdHWA <- stateData %>%
 
 if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
 
-save(BirdHWA, file = 'data/BirdHWA.rda') 
+## Combine data sets: add temperature data -------------------
+climate <- getData('worldclim', var = 'bio', res = 2.5)
+clim <- climate[[c(6,11)]]
+names(clim) <- c("minTemp","meanTemp")   ## Minimum and Mean Temperature of Coldest Quarter
+
+xy <- BirdHWA %>% 
+  dplyr::select(`RouteId`,
+                `Longitude`,
+                `Latitude`) %>% 
+  distinct() %>% 
+  as.data.frame()
+
+tempDF <- cbind(extract(clim, SpatialPoints(xy[,2:3]), df = T), xy)
+
+tempDF <- tempDF %>% 
+  dplyr::select(`RouteId`,
+                `minTemp`,
+                `meanTemp`) %>% 
+  distinct() %>% 
+  mutate(minTemp = scale(minTemp),
+         meanTemp = scale(meanTemp))
+
+for(i in 1:nrow(tempDF)){
+  if(nchar(tempDF$RouteId[i]) != 5) {
+    tempDF$RouteId[i] <- str_c(rep(0,(5-nchar(tempDF$RouteId[i]))), tempDF$RouteId[i], collapse= "")
+  } else {
+    tempDF$RouteId[i] <- tempDF$RouteId[i]
+  }
+}
+
+# Combine data sets: add hexagon number ---------------------
+route_hex <- read_rds(HEXAGON_PATH)
+
+BirdHWA <- BirdHWA %>%
+  left_join(tempDF, by = c("RouteId")) %>% 
+  left_join(route_hex, by= "RouteId")
+
+## Save!  -------------------
+write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
+write_rds(infestations, file = 'data/infestations.rds') 
+
