@@ -20,9 +20,17 @@ single_sps <- function(species){
     filter(RouteId %in% as_vector(route_range)) %>% 
     filter(SpeciesCode == species | is.na(SpeciesCode))
   
+  ## standardize temperature  -----------------
+  # mean by species, sd for all data (calculated in combineData.R)
+  BIRD3 <- BIRD2 %>% 
+    mutate(min_tempMe = mean(minTemp),
+           mean_tempMe = mean(meanTemp),
+           temp_min_scale = (minTemp - min_tempMe)/sd_tempMi,
+           temp_mean_scale = (meanTemp - mean_tempMe)/sd_tempMe)
+ 
   filename <- paste("data/species/", species, ".rds",sep= "")
     
-  write_rds(BIRD2, file = filename)
+  write_rds(BIRD3, file = filename)
   
 }
 
