@@ -2,17 +2,13 @@ library(tidyverse)
 library(hablar)
 
 # files I need: BirdHWA, infestations
+BirdHWA <- readRDS('data/BirdHWA.rds') 
+infestations <- readRDS('data/infestations.rds')
 
 ## Filter: locations  --------------------
 # routes only in counties with hemlock trees
 BirdHWA_f <- BirdHWA %>% 
   filter(RouteId %in% infestations$RouteId)
-
-## Filter: only selected species --------------------
-
-
-
-
 
 ## Filter: only one type of observation --------------------
 # keep only one row for each routeXday
@@ -35,15 +31,15 @@ BirdHWA_f2 <- rbind(BirdHWA_f2unique,BirdHWA_f2dup_2)
 # yrhwa and first time observer
 BirdHWA_n3 <- BirdHWA_f2 %>% 
   mutate(yrhwa = Year - YearInfested,
-         Observer_route = paste(RouteId,ObserverId, sep="_")) %>% 
+         ObserverRoute = paste(RouteId,ObserverId, sep="_")) %>% 
   rename(ObserverType = ObsType) %>% 
   arrange(RouteId,Year)
 
 first_obs <- BirdHWA_n3 %>% 
-  select(RouteId,Year,ObserverId) %>%
+  dplyr::select(RouteId,Year,ObserverId) %>%
   group_by(ObserverId) %>% 
   filter(Year == min(Year)) %>% 
-  slice(1) %>% # takes the first occurrence if there is a tie
+  slice(1) %>%   # takes the first occurrence if there is a tie
   ungroup() %>%
     mutate(NewObserver = T)
    
@@ -54,5 +50,8 @@ BirdHWA_n4 <- left_join(BirdHWA_n3,first_obs,
            SpeciesId, SpeciesCode, SpeciesName, SpeciesSciName,SpeciesTotal,
            Infested, YearInfested, yrhwa,
            Latitude, Longitude,
-           ObserverId, ObserverType, Observer_route, NewObserver)
+           ObserverId, ObserverType, ObserverRoute, NewObserver)
 
+BirdHWA_2 <- BirdHWA_n4
+  
+write_rds(BirdHWA_2, file = "data/BirdHWA_2.rds") 
