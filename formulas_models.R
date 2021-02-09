@@ -5,10 +5,10 @@ formula1 <- SpeciesTotal ~ 1 +
   infoff +
   yrhwa * infoff +
   NewObserver +
-  minTemp +
-  minTemp * yrhwa +
-  minTemp * infoff +
-  minTemp * infoff * yrhwa +
+  temp_min_scale +
+  temp_min_scale * yrhwa +
+  temp_min_scale * infoff +
+  temp_min_scale * infoff * yrhwa +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -18,9 +18,9 @@ formula2 <- SpeciesTotal ~ 1 +
   yrhwa + 
   yrhwa * infoff +
   NewObserver +
-  minTemp +
-  minTemp * yrhwa +
-  minTemp * infoff * yrhwa +
+  temp_min_scale +
+  temp_min_scale * yrhwa +
+  temp_min_scale * infoff * yrhwa +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -30,41 +30,41 @@ formula3 <- SpeciesTotal ~ 1 +
   yrhwa + 
   infoff +
   NewObserver +
-  minTemp +
-  minTemp * yrhwa +
-  minTemp * infoff +
+  temp_min_scale +
+  temp_min_scale * yrhwa +
+  temp_min_scale * infoff +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
 ## modeel in between shgould have temperature times year!
-## only minTemp but no temp interaction - additive effect
+## only temp_min_scale but no temp interaction - additive effect
 formula4 <- SpeciesTotal ~ 1 + 
   yrhwa + 
   infoff +
   yrhwa * infoff +
   NewObserver +
-  minTemp * yrhwa +
+  temp_min_scale * yrhwa +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-## only minTemp but no interaction - additive effect + only intercept change
+## only temp_min_scale but no interaction - additive effect + only intercept change
 formula5 <- SpeciesTotal ~ 1 + 
   yrhwa + 
   infoff +
   NewObserver +
-  minTemp * yrhwa +
+  temp_min_scale * yrhwa +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)
 
-## only minTemp but no interaction - additive effect + only slope change
+## only temp_min_scale but no interaction - additive effect + only slope change
 formula6 <- SpeciesTotal ~ 1 + 
   yrhwa + 
   yrhwa * infoff +
   NewObserver +
-  minTemp * yrhwa +
+  temp_min_scale * yrhwa +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
