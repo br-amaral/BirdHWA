@@ -16,9 +16,39 @@ single_sps <- function(species){
     unique() %>% 
     arrange()
   
-  BIRD2 <- BIRD %>% 
+  BIRD2a <- BIRD %>% 
     filter(RouteId %in% as_vector(route_range)) %>% 
-    filter(SpeciesCode == species | is.na(SpeciesCode))
+    filter(SpeciesCode == species)
+  
+  BIRD2b <- BIRD %>% 
+    filter(RouteId %in% as_vector(route_range)) %>% 
+    filter(SpeciesCode != species) %>% 
+    mutate(SpeciesId = NA,  
+           SpeciesCode = NA,
+           SpeciesName = NA,
+           SpeciesSciName = NA,
+           SpeciesTotal = 0) %>% 
+    distinct(RouteId, StateNum, Route, Year, 
+             SpeciesId,SpeciesCode, SpeciesName, SpeciesSciName, SpeciesTotal,
+             Infested, YearInfested, yrhwa,
+             Latitude, Longitude, 
+             #ObserverId, ObserverType, ObserverRoute, NewObserver,
+             minTemp, meanTemp, hexID, sd_tempMi, sd_tempMe,
+             .keep_all = T)
+
+  year_route_samp <- BIRD2a %>% 
+    dplyr::select(RouteId,Year) %>% 
+    distinct()
+
+  add_nodetcs <- left_join(year_route_samp, BIRD2b, by= c("RouteId", "Year")) %>% 
+    relocate(colnames(BIRD2a))
+  
+  if(nrow(year_route_samp) != nrow(add_nodetcs)) {
+    stop("error in line 44!")
+  }
+  
+  BIRD2 <- rbind(BIRD2a, BIRD2b) %>% 
+    arrange(RouteId, Year)
   
   ## standardize temperature  -----------------
   # mean by species, sd for all data (calculated in combineData.R)
