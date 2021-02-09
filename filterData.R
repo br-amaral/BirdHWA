@@ -52,6 +52,12 @@ BirdHWA_n4 <- left_join(BirdHWA_n3,first_obs,
            Latitude, Longitude,
            ObserverId, ObserverType, ObserverRoute, NewObserver)
 
+for(i in 1:nrow(BirdHWA_n4)){
+  if(!is.finite(BirdHWA_n4$YearInfested[i])) {BirdHWA_n4$YearInfested[i] <- 0}
+  if(!is.finite(BirdHWA_n4$Infested[i])) {BirdHWA_n4$Infested[i] <- 0}
+  if(!is.finite(BirdHWA_n4$yrhwa[i])) {BirdHWA_n4$yrhwa[i] <- 0}
+}
+
 BirdHWA_2 <- BirdHWA_n4
   
 write_rds(BirdHWA_2, file = "data/BirdHWA_2.rds") 
