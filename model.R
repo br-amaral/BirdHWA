@@ -2,7 +2,9 @@ library(INLA)
 
 set.seed(10)
 
+SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 source("formulas_models.R")
+sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste(getwd(),"/data/hexmap.graph", sep="")
 
 offsets <- seq(2,16,1)
@@ -11,12 +13,6 @@ run_model <- function(offset, BIRDx, formula){
 
 ## Create an year offset for that species ------------------  
 #  year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-  for(i in 1:nrow(BIRDx)){
-    if(!is.finite(BIRDx$YearInfested[i])) {BIRDx$YearInfested[i] <- 0}
-    if(!is.finite(BIRDx$Infested[i])) {BIRDx$Infested[i] <- 0}
-    if(!is.finite(BIRDx$yrhwa[i])) {BIRDx$yrhwa[i] <- 0}
-  }
-  
   BIRDx$year_offset <- (BIRDx$Year - BIRDx$YearInfested - offset)
   for(i in 1:nrow(BIRDx)){
     if(BIRDx$YearInfested[i]==0) {BIRDx$year_offset[i] <- 0}
@@ -74,9 +70,7 @@ run_combinations <- function(species){
   }
 }
 
-\
-run_combinations("MODO")
-
+lapply(sps_list$SpeciesCode, run_combinations)
 
 
 
