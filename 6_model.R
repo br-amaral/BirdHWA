@@ -13,18 +13,11 @@ offsets <- seq(2,16,1)
 run_model <- function(offset, BIRDx, formula){
 
 ## Create an year offset for that species ------------------  
-#  year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-  BIRDx$year_offset <- (BIRDx$Year - BIRDx$YearInfested - offset)
-  for(i in 1:nrow(BIRDx)){
-    if(BIRDx$YearInfested[i]==0) {BIRDx$year_offset[i] <- 0}
-  }
-  
-  ## infoff: 'infested' route according to the delay in the effect (offset)
-  BIRDx$infoff <- rep(NA,nrow(BIRDx))
-  for(i in 1:nrow(BIRDx)){
-    if(BIRDx$year_offset[i]<=0) {BIRDx$infoff[i] <- 0}
-    if(BIRDx$year_offset[i]>0) {BIRDx$infoff[i] <- 1}
-  }
+  BIRDx <- BIRDx %>% 
+           # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
+           # infoff: 'infested' route according to the delay in the effect (offset)
+           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   
   model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
@@ -41,16 +34,7 @@ run_model <- function(offset, BIRDx, formula){
   
   waic <- model$waic$waic
   
-  return(list(model = model,
-              meaninf = meaninf,
-              lowinf = lowinf,
-              highinf = highinf,
-              meaninfL = meaninfL,
-              lowinfL = lowinfL,
-              highinfL = highinfL,
-              waic = waic
-              )
-         )
+  return(model)
 }
 
 run_combinations <- function(species){
