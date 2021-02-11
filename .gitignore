@@ -11,6 +11,9 @@ data
 # User-specific files
 .Ruserdata
 
+# temperature data
+wc2-5
+
 # Example code in package build process
 *-Ex.R
 
