@@ -1,8 +1,20 @@
-# check why some infestation years are inf and NA
+# 2_combineData
+
+# Input: StateData: folder with matrices from BBS with bird data for individual states
+#        infestations.rds: routes with information of when they were infested
+#        weather.csv: matrix with information regarding the observer
+#        route_coor.csv: matrix with xy coordinates of the routes
+#        route_hex.rds: output of 1_createSpace. matrix with routes and hexagon number
+#        https://(...)speclist.cfm: website with species names and codes
+#        
+# Output: 
+#         BirdHWA.rds:
+#         infestations_2.rds
 
 library(tidyverse)
 library(fs)
 library(rvest)
+library(sp)
 ## have raster library installed
 
 STATE_DATA_PATH <- "data/src/StateData"
@@ -129,5 +141,5 @@ BirdHWA <- BirdHWA %>%
 
 ## Save!  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
-write_rds(infestations, file = 'data/infestations.rds') 
+write_rds(infestations, file = 'data/infestations_2.rds') 
 
