@@ -1,9 +1,17 @@
+# 3_filterData
+
+# Input: 
+#        
+# Output: 
+#         
+
 library(tidyverse)
 library(hablar)
+library(glue)
 
 # files I need: BirdHWA, infestations
 BirdHWA <- readRDS('data/BirdHWA.rds') 
-infestations <- readRDS('data/infestations.rds')
+infestations <- readRDS('data/infestations_2.rds')
 
 ## Filter: locations  --------------------
 # routes only in counties with hemlock trees
@@ -24,7 +32,7 @@ BirdHWA_f2 <- BirdHWA_f %>%
 # yrhwa and first time observer
 BirdHWA_n3 <- BirdHWA_f2 %>% 
   mutate(yrhwa = Year - YearInfested,
-         ObserverRoute = paste(RouteId,ObserverId, sep="_")) %>% 
+         ObserverRoute = glue("{RouteId}_{ObserverId}")) %>% 
   rename(ObserverType = ObsType) %>% 
   arrange(RouteId,Year)
 
@@ -45,12 +53,12 @@ BirdHWA_n4 <- left_join(BirdHWA_n3,first_obs,
            Latitude, Longitude,
            ObserverId, ObserverType, ObserverRoute, NewObserver)
 
-for(i in 1:nrow(BirdHWA_n4)){
-  if(!is.finite(BirdHWA_n4$YearInfested[i])) {BirdHWA_n4$YearInfested[i] <- 0}
-  if(!is.finite(BirdHWA_n4$Infested[i])) {BirdHWA_n4$Infested[i] <- 0}
-  if(!is.finite(BirdHWA_n4$yrhwa[i])) {BirdHWA_n4$yrhwa[i] <- 0}
-}
+BirdHWA_n5 <- BirdHWA_n4 %>% 
+  mutate(YearInfested = replace(YearInfested,!is.finite(YearInfested),0),
+         Infested = replace(Infested,!is.finite(Infested),0),
+         yrhwa = replace(yrhwa,!is.finite(yrhwa),0)
+         )
 
-BirdHWA_2 <- BirdHWA_n4
+BirdHWA_2 <- BirdHWA_n5
   
 write_rds(BirdHWA_2, file = "data/BirdHWA_2.rds") 
