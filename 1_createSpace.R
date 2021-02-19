@@ -1,14 +1,19 @@
+# 1_createSpace
+
+# Input: hexagons: hexagon shape file, spatial position and FID of each cell
+#                  matrix with each route and its FID
+# Output: route_hex.csv: matrix with each route and the hexagon number where it is
+
 library(sp)
-library(raster)
 library(spdep)
-library(dplyr)
-library(stringr)
+library(tidyverse)
+requireNamespace("raster")
 
 # create hexagon map
 HEX_DATA_PATH <- "data/src/HexMap/hexagons"
 ROUTE_DATA_PATH <- "data/src/route_hex.csv"
 
-hexmap <- shapefile(HEX_DATA_PATH)
+hexmap <- raster::shapefile(HEX_DATA_PATH)
   
 #plot(hexmap)
 # transform shapefile into adjacency matrix (for CAR model)
@@ -23,15 +28,11 @@ route_hex <- read_csv(ROUTE_DATA_PATH, col_types = cols_only(
   RTENO = col_character(),
   Input_FID = col_number())) %>% 
   select(RouteId = `RTENO`,
-         FID = `Input_FID`)
-
-for(i in 1:nrow(route_hex)){
-  if(nchar(route_hex$RouteId[i]) != 5) {
-    route_hex$RouteId[i] <- str_c(rep(0,(5-nchar(route_hex$RouteId[i]))), route_hex$RouteId[i], collapse= "")
-    } else {
-      route_hex$RouteId[i] <- route_hex$RouteId[i]
-    }
-}
+         FID = `Input_FID`) %>%
+  mutate(RouteId = ifelse(nchar(RouteId) != 5,
+                          paste0(strrep(0, times = 5 - nchar(RouteId)), RouteId),
+                          paste0(RouteId)
+                          ))
 
 route_hex <- left_join(route_hex, hexord, by = "FID") %>% 
   select(`RouteId`,
