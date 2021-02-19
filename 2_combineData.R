@@ -120,15 +120,10 @@ tempDF <- tempDF %>%
   select(`RouteId`,
          `minTemp`,
          `meanTemp`) %>% 
-  distinct() 
-
-for(i in 1:nrow(tempDF)){
-  if(nchar(tempDF$RouteId[i]) != 5) {
-    tempDF$RouteId[i] <- str_c(rep(0,(5-nchar(tempDF$RouteId[i]))), tempDF$RouteId[i], collapse= "")
-  } else {
-    tempDF$RouteId[i] <- tempDF$RouteId[i]
-  }
-}
+  distinct() %>% 
+  mutate(RouteId = ifelse(nchar(tempDF$RouteId) != 5,
+                          str_c(rep(0,(5-nchar(tempDF$RouteId))), tempDF$RouteId, collapse= ""),
+                          RouteId))
 
 # Combine data sets: add hexagon number ---------------------
 route_hex <- read_rds(HEXAGON_PATH)
