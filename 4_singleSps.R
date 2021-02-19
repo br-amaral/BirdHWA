@@ -1,5 +1,12 @@
+# 4_singleSps
+
+# Input: 
+#        
+# Output: 
+#         
+
 library(purrr)
-library(dplyr)
+library(tidyverse)
 
 # Create individual species data.frames to run the models
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
