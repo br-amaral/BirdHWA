@@ -16,8 +16,8 @@ speciesList <- read_html(SPECIES_TABLE_URL) %>%
          SpeciesName = `Common Name`,
          SpeciesSciName = `Scientific Name`)
 
-file_path <- "~/Box/BirdsHemlocks/BirdHWA_GitHub_labPc/data (1)/models_res/"
-species <- as.character(sps_mod[2,])
+file_path <- "~/Box/BirdsHemlocks/BirdHWA_GitHub_labPc/data/models_res/"
+species <- as.character(sps_mod[1,])
 
 # function to load all model and offset combinations for a species
 load_res <- function(species){
@@ -28,12 +28,24 @@ load_res <- function(species){
            end = "yrs.RDS") %>% 
     transmute(name_file = paste0(path, model,"_", years, end)) %>% 
     pull()  # transform tibble to vector
-    map(tb, readRDS)
+  #return(tb)  
+  map(tb, readRDS)
 }
 
-BHVI_model <- load_res("BHVI")
+load_res("BHVI")
+
+mods1 <- lapply(tb[1:2], readRDS)
+mods1Waic <- mods1[1]
+
+WAIC <- tribble(~yr1, ~yr2, ~yr3, ~yr4, ~yr5, 
+                ~yr6, ~yr7, ~yr8, ~yr9, ~yr10, 
+                ~yr11, ~yr12, ~yr13, ~yr14, ~yr15, 
+                #--|--|----
+                
+)
+  
 
 summary(BHVI_model[[2]]$model)
 
 
-
+readRDS(tb[1])
