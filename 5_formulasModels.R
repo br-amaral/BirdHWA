@@ -3,12 +3,12 @@
 formula1 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
   temp_min_scale +
-  temp_min_scale * year_offset +
-  temp_min_scale * infoff +
-  temp_min_scale * infoff * year_offset +
+  temp_min_scale : year_offset +
+  temp_min_scale : infoff +
+  temp_min_scale : infoff : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -16,23 +16,23 @@ formula1 <- SpeciesTotal ~ 1 +
 # minus infoff: no initial change, broken stick with 2 connected lines ----------
 formula2 <- SpeciesTotal ~ 1 + 
   year_offset + 
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
   temp_min_scale +
-  temp_min_scale * year_offset +
-  temp_min_scale * infoff * year_offset +
+  temp_min_scale : year_offset +
+  temp_min_scale : infoff : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-# minus year_offset * infoff: no change in trend - one time effect ----------
+# minus year_offset : infoff: no change in trend - one time effect ----------
 formula3 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
   NewObserver +
   temp_min_scale +
-  temp_min_scale * year_offset +
-  temp_min_scale * infoff +
+  temp_min_scale : year_offset +
+  temp_min_scale : infoff +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -42,9 +42,9 @@ formula3 <- SpeciesTotal ~ 1 +
 formula4 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
-  temp_min_scale * year_offset +
+  temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -55,7 +55,7 @@ formula5 <- SpeciesTotal ~ 1 +
   year_offset + 
   infoff +
   NewObserver +
-  temp_min_scale * year_offset +
+  temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)
@@ -64,9 +64,9 @@ formula5 <- SpeciesTotal ~ 1 +
 # additive effect + only slope change
 formula6 <- SpeciesTotal ~ 1 + 
   year_offset + 
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
-  temp_min_scale * year_offset +
+  temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
@@ -93,7 +93,7 @@ formula8 <- SpeciesTotal ~ 1 +
 ## intercept, year_offset, NewObservers + plus trend change ----------
 formula9 <- SpeciesTotal ~ 1 + 
   year_offset + 
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
@@ -103,7 +103,7 @@ formula9 <- SpeciesTotal ~ 1 +
 formula10 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
-  year_offset * infoff +
+  year_offset : infoff +
   NewObserver +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
