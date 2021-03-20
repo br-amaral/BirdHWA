@@ -5,7 +5,6 @@ library(progress)
 library(INLA)
 library(tidyselect)
 
-#teste teste testet
 
 source("5_formulasModels.R")
 source("extract_fixed_pars.R")
@@ -13,6 +12,7 @@ source("extract_fixed_pars.R")
 DATA_PATH <- path("data")
 RESULT_PATH <- path(DATA_PATH, "models_res")
 RESULT_GLUE <- "{species}/{species}_model{model}_{year}yrs.rds"
+RESULT_GLUE2 <- "/{species}/{species}_model{model}_{year}yrs.rds"
 SUMMARY_RESULT_PATH <- path(RESULT_PATH, "summary_results.rds")
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 
@@ -31,7 +31,7 @@ all_combinations <- tibble(
     result_path = path(RESULT_PATH, glue_data(., RESULT_GLUE))
   )
 
-run_save_model <- function(model, formula, year, species, result_path) {
+up_res_model <- function(model, formula, year, species, result_path) {
   if (exists("pb")) {
     pb$tick()
   }
@@ -42,7 +42,7 @@ run_save_model <- function(model, formula, year, species, result_path) {
 pb <- progress_bar$new(total = nrow(all_combinations))
 
 summary_results <- all_combinations %>%
-  mutate(result = pmap(., run_save_model))
+  mutate(result = pmap(., up_res_model))
 
 write_rds(summary_results, SUMMARY_RESULT_PATH)
 
@@ -51,8 +51,7 @@ summary_results2 <- summary_results %>%
   #filter(!map_lgl(waic_list, is.null)) %>%
   mutate(waicNull = !map_lgl(waic_list, is.null),
          waic = NA)
-  #mutate(waic_list = na_if(waic_list, NULL))
-  #mutate(waic_list= ifelse(is.null(waic_list), NA, waic_list)) %>%
+
 for(i in 1:nrow(summary_results2)){
   if(as.logical(summary_results2$waicNull[i]) == TRUE) {
     summary_results2$waic[i] <- unlist(pluck(summary_results2$waic_list[i], 1))} else {
@@ -72,11 +71,12 @@ summary_results2 <- summary_results2 %>%
          infoff_temp_min_scale = map(fixed, f_infoff_temp_min_scale),
          year_offset_infoff_temp_min_scale = map(fixed, f_year_offset_infoff_temp_min_scale)) 
 
-# waic plot
+# waic plot   ---------------------
 ggplot(aes(year, jitter(waic, amount = 0.5), group=model, color=factor(model)), data = summary_results2) +
   geom_line(alpha=0.5) +
   geom_point(alpha=0.5)
 
+# ploting parameters  -----------------
 model_names <- paste(rep("Model",10), seq(1,10), sep= " ")
 
 plot_var <- function(my_tibble, variable1) {
@@ -113,13 +113,27 @@ colnames(summary_results2[11:19])
 "year_offset_temp_min_scale"       
 "infoff_temp_min_scale"            
 "year_offset_infoff_temp_min_scale"
-
+ +
+  A*-6
 plot_var(summary_results2, "infoff_temp_min_scale")
 
-
-
-
-
+# Make predictions and plotting ---------
+# summary_results <- summary_results_MAWA2
+# change all MAWA2 for data object path, and summary_results_MAWA2 for summary_results$results
+species <- "MAWA"
+summary_results2 <- summary_results %>% 
+  filter(species == species) %>% 
+  mutate(pred_path = glue(RESULT_PATH, RESULT_GLUE2),
+         pred_obj = NA)
+#arr <- array(NA, dim = c(14205,6,70))
+preds <- list()
+for(i in 1:nrow(summary_results2)){
+  a <- read_rds(summary_results2$pred_path[i])
+  b <- as.data.frame(a$summary.fitted.values)
+  preds[[i]] <- b
+  rm(a)
+}
+  
 
 
 
