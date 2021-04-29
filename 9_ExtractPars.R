@@ -4,10 +4,14 @@ library(fs)
 library(INLA)
 library(tidyselect)
 
-source("extract_fixed_pars.R")
+### choose species here! species list is: 
+###  BHVI BLBW BTNW HETH MAWA RBNU ACFL  
+spsr <- "BLBW"
 
-spsr <- "MAWA"
-summary_results <- readRDS(glue('{spsr}_summares.RDS'))
+source("7_extract_fixed_pars.R")
+
+summary_results <- readRDS(glue('{spsr}_summares_2.RDS'))
+# summary_results <- summary_results[1:15,]
 
 summary_results2 <- summary_results %>%
   mutate(waic_list = map(result, "waic")) %>%
@@ -45,7 +49,7 @@ pars_models_FUNC <- function(i) {
            year_offset_infoff = year_offset_infoff[[i]],
            year_offset_temp_min_scale = year_offset_temp_min_scale[[i]],
            infoff_temp_min_scale = infoff_temp_min_scale[[i]],
-           year_offset_infoff_temp_min_scale = year_offset_infoff_temp_min_scale[[1]],
+           year_offset_infoff_temp_min_scale = year_offset_infoff_temp_min_scale[[i]],
            esti_type = ifelse(i == 1, "mean", ifelse(i == 2, "low", "up"))) %>% 
     select(-c(result_path, result, waic_list, waicNull, fixed))
 }
