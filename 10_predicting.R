@@ -180,15 +180,20 @@ predict.inla <- function(species, modelN, temp) {
                nrow = 3)
 }
 
-predict.inla(spsr, 1, 2)
-predict.inla(spsr, 2, 2)
-predict.inla(spsr, 3, 2)
+#predict.inla(spsr, 1, 1.5)
+#predict.inla(spsr, 2, 1.5)
+#predict.inla(spsr, 3, 1.5)
 
 predict.inla(spsr, 1, 0)
 predict.inla(spsr, 2, 0)
 predict.inla(spsr, 3, 0)
 
-predict.inla(spsr, 1, -2)
-predict.inla(spsr, 2, -2)
-predict.inla(spsr, 3, -2)
+predict.inla(spsr, 1, -1.5)
+predict.inla(spsr, 2, -1.5)
+predict.inla(spsr, 3, -1.5)
+
+predict.inla(spsr, 9, -1.5)
+predict.inla(spsr, 9,  1.5)
+predict.inla(spsr, 9, 0)
+
 
