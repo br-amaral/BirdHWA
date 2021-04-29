@@ -44,6 +44,7 @@ formula4 <- SpeciesTotal ~ 1 +
   infoff +
   year_offset : infoff +
   NewObserver +
+  temp_min_scale +
   temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
@@ -55,6 +56,7 @@ formula5 <- SpeciesTotal ~ 1 +
   year_offset + 
   infoff +
   NewObserver +
+  temp_min_scale +
   temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
@@ -66,6 +68,7 @@ formula6 <- SpeciesTotal ~ 1 +
   year_offset + 
   year_offset : infoff +
   NewObserver +
+  temp_min_scale +
   temp_min_scale : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
