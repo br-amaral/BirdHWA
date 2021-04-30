@@ -17,18 +17,19 @@ BIRD <- readRDS(BIRD_FILE_PATH)
 
 single_sps <- function(species){
   ## select a species and keep undetected records --------------------
-  route_range <- BIRD %>% 
-    filter(SpeciesCode == species) %>% 
-    select(RouteId) %>% 
-    unique() %>% 
-    arrange()
-  
   BIRD2a <- BIRD %>% 
-    filter(RouteId %in% as_vector(route_range)) %>% 
     filter(SpeciesCode == species)
   
+  route_range_year <- BIRD2a %>% 
+    select(RouteId, Year) %>% 
+    mutate(RouteIdYr = paste0(RouteId, as.character(Year))) %>% 
+    unique() %>% 
+    arrange()
+   
   BIRD2b <- BIRD %>% 
-    filter(RouteId %in% as_vector(route_range)) %>% 
+    filter(RouteId %in% as_vector(route_range_year$RouteId)) %>% 
+    mutate(RouteIdYr = paste0(RouteId, as.character(Year))) %>% 
+    filter(!(RouteIdYr %in% route_range_year$RouteIdYr)) %>% 
     filter(SpeciesCode != species) %>% 
     mutate(SpeciesId = NA,  
            SpeciesCode = NA,
@@ -36,22 +37,19 @@ single_sps <- function(species){
            SpeciesSciName = NA,
            SpeciesTotal = 0) %>% 
     distinct(RouteId, StateNum, Route, Year, 
-             SpeciesId,SpeciesCode, SpeciesName, SpeciesSciName, SpeciesTotal,
+             SpeciesId, SpeciesCode, SpeciesName, SpeciesSciName, SpeciesTotal,
              Infested, YearInfested, yrhwa,
              Latitude, Longitude, 
              #ObserverId, ObserverType, ObserverRoute, NewObserver,
              minTemp, meanTemp, hexID, sd_tempMi, sd_tempMe,
-             .keep_all = T)
-
-  year_route_samp <- BIRD2a %>% 
-    select(RouteId,Year) %>% 
-    distinct()
+             .keep_all = T) %>% 
+    select(-RouteIdYr)
 
   add_nodetcs <- left_join(year_route_samp, BIRD2b, by= c("RouteId", "Year")) %>% 
     relocate(colnames(BIRD2a))
   
   if(nrow(year_route_samp) != nrow(add_nodetcs)) {
-    stop("error in line 44!")
+    stop("error in line 51!")
   }
   
   BIRD2 <- rbind(BIRD2a, BIRD2b) %>% 
