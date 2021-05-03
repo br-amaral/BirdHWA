@@ -15,7 +15,7 @@ ROUTE_DATA_PATH <- "data/src/route_hex.csv"
 
 hexmap <- raster::shapefile(HEX_DATA_PATH)
   
-#plot(hexmap)
+# plot(hexmap)
 # transform shapefile into adjacency matrix (for CAR model)
 # who is whose neighbour?
 temp <- poly2nb(hexmap, row.names= hexmap$Input_FID)
