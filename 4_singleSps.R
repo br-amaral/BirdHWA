@@ -45,10 +45,10 @@ single_sps <- function(species){
              .keep_all = T) %>% 
     select(-RouteIdYr)
 
-  add_nodetcs <- left_join(year_route_samp, BIRD2b, by= c("RouteId", "Year")) %>% 
+  add_nodetcs <- left_join(route_range_year, BIRD2b, by= c("RouteId", "Year")) %>% 
     relocate(colnames(BIRD2a))
   
-  if(nrow(year_route_samp) != nrow(add_nodetcs)) {
+  if(nrow(route_range_year) != nrow(add_nodetcs)) {
     stop("error in line 51!")
   }
   
