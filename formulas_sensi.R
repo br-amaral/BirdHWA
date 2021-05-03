@@ -93,7 +93,7 @@ formula7 <- SpeciesTotal ~ 1 +
   temp_min_scale : infoff +
   temp_min_scale : infoff : year_offset +
   f(ObserverRoute, model="iid") + 
-  f(Year, model="iid") +
+  f(Year, model="iid") 
 
 # minus infoff: no initial change, broken stick with 2 connected lines ----------
 formula8 <- SpeciesTotal ~ 1 + 
@@ -104,7 +104,7 @@ formula8 <- SpeciesTotal ~ 1 +
   temp_min_scale : year_offset +
   temp_min_scale : infoff : year_offset +
   f(ObserverRoute, model="iid") + 
-  f(Year, model="iid") +
+  f(Year, model="iid")
 
 # minus year_offset : infoff: no change in trend - one time effect ----------
 formula9 <- SpeciesTotal ~ 1 + 
@@ -115,7 +115,12 @@ formula9 <- SpeciesTotal ~ 1 +
   temp_min_scale : year_offset +
   temp_min_scale : infoff +
   f(ObserverRoute, model="iid") + 
-  f(Year, model="iid") +
+  f(Year, model="iid")
+
+
+formulas <- list(formula1,formula2,formula3,formula4,
+                 formula6,formula6,formula7,formula8,
+                 formula9)
 
 
 
