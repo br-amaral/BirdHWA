@@ -15,7 +15,23 @@ BIRDallsps <- readRDS(BIRD_FILE_PATH) %>%
   unique()
 sps_list <- read_csv(SPECIES_DATA_PATH)
 
-plot_data_dist <- function(species, mindec, maxdec) {
+plot_heat <- function(BIRDdat, mindec, maxlim){
+  ggplot(data = BIRDdat, aes(RouteId, Year, fill= SpeciesTotal)) + 
+    geom_tile() +
+    scale_fill_distiller(palette = "Spectral",
+                         limits = c(mindec, maxlim)) +
+    theme_ipsum() +
+    ggtitle(BIRDdat$SpeciesCode[1]) +
+    theme(axis.text.x = element_text(angle = 90, 
+                                     vjust = 0.5,
+                                     hjust=1))
+}
+
+species <- "ACFL"
+mindec <- 0
+maxdec <- 30
+
+#plot_data_dist <- function(species, mindec, maxdec) {
   LOAD_SINGLE_SPS <- glue("{SINGLE_SPS}/{species}.rds")
   SBIRD <- read_rds(LOAD_SINGLE_SPS)
   SBIRD2 <- SBIRD %>% 
@@ -36,8 +52,12 @@ plot_data_dist <- function(species, mindec, maxdec) {
   for(i in 1:n_splits){
     BIRDs[[i]] <- SBIRD2 %>% filter(RouteId %in% rout_mat[i,])
   }
-  print(map(BIRDs, plot_heat))
-  
+  #print(map(.x = BIRDs,mindec = mindec, maxlim = maxlim,.f = plot_heat))
+    for(i in 1:length(BIRDs)){
+      print(plot_heat(BIRDdat = BIRDs[[i]], 
+                      mindec = mindec, maxlim = maxlim))
+    }
+    
   over_max <- SBIRD %>% 
     select(SpeciesCode, SpeciesTotal, RouteId, Year, Infested,
            Latitude, Longitude) %>% 
@@ -48,13 +68,12 @@ plot_data_dist <- function(species, mindec, maxdec) {
   View(over_max)
   
   print(
-    
     ggplot(data = over_max, aes(RouteId, Year, fill= SpeciesTotal)) + 
       geom_tile() +
       scale_fill_distiller(palette = "RdPu") +
       theme_ipsum() +
       ggtitle(glue(
-        "{BIRDdat$SpeciesCode[1]} - {nrow(over_max)}/{nrow(SBIRD2)} occasions with over {maxdec} detecs")) +
+        "{over_max$SpeciesCode[1]} - {nrow(over_max)}/{nrow(SBIRD2)} occasions with over {maxdec} detecs")) +
       theme(axis.text.x = element_text(angle = 90, 
                                        vjust = 0.5,
                                        hjust=1))
@@ -68,19 +87,16 @@ plot_data_dist <- function(species, mindec, maxdec) {
   plot(BIRDallsps, col="lightgray")
   points(over_max$Longitude, over_max$Latitude)
   
-}
+#}
 
-plot_heat <- function(BIRDdat){
-  ggplot(data = BIRDdat, aes(RouteId, Year, fill= SpeciesTotal)) + 
-    geom_tile() +
-    scale_fill_distiller(palette = "Spectral",
-                         limits = c(mindec, maxlim)) +
-    theme_ipsum() +
-    ggtitle(BIRDdat$SpeciesCode[1]) +
-    theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5,
-                                     hjust=1))
-}
 
-plot_data_dist("ACFL", 0, 30)
+
+#plot_data_dist("ACFL", 0, 30)
+#plot_data_dist("BLBW", 0, 30)
+#plot_data_dist("BTWN", 0, 30)
+#plot_data_dist("HETH", 0, 30)
+#plot_data_dist("MAWA", 0, 30)
+#plot_data_dist("OVEN", 0, 30)
+#plot_data_dist("RBNU", 0, 30)
+#plot_data_dist("BHVI", 0, 30)
 
