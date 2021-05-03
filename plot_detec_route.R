@@ -54,7 +54,7 @@ plot_data_dist <- function(species, mindec, maxdec) {
       scale_fill_distiller(palette = "RdPu") +
       theme_ipsum() +
       ggtitle(glue(
-        "{BIRDdat$SpeciesCode[1]} - {nrow(over_max)} occasions with over {maxdec} detecs")) +
+        "{BIRDdat$SpeciesCode[1]} - {nrow(over_max)}/{nrow(SBIRD2)} occasions with over {maxdec} detecs")) +
       theme(axis.text.x = element_text(angle = 90, 
                                        vjust = 0.5,
                                        hjust=1))
