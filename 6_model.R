@@ -27,6 +27,22 @@ run_model <- function(offset, BIRDx, formula){
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   
+  rout_notinf <- BIRDx %>% 
+    select(RouteId, Year, YearInfested, Infested) %>% 
+    filter(YearInfested == 0) %>% 
+    distinct() %>% 
+    group_by(RouteId) %>% 
+    mutate(maxYear = max(Year)) %>% 
+    select(RouteId, maxYear) %>% 
+    distinct()
+  
+  for(i in nrow(BIRDx)){
+    if(BIRDx$YearInfested[i] == 0){
+      off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
+      BIRDx$year_offset[i] <- off_noin
+    }
+  }
+  
   model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
                 control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
@@ -53,7 +69,7 @@ run_combinations <- function(species){
   }
 }
 
-lapply(sps_list$SpeciesCode[1], run_combinations)
+lapply(sps_list$SpeciesCode, run_combinations)
 
 
 
