@@ -91,6 +91,10 @@ latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
   mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
   relocate(RouteId)
 
+## select only routes in hemlock range
+stateData <- stateData %>% 
+  filter(RouteId %in% infestations$RouteId)
+
 ## Combine data sets: infestation, species, observer and lat long  --------------------
 # single tibble with all the information
 BirdHWA <- stateData %>%
