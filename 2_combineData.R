@@ -138,9 +138,10 @@ route_hex <- read_rds(HEXAGON_PATH)
 
 BirdHWA <- BirdHWA %>%
   left_join(tempDF, by = c("RouteId")) %>% 
-  left_join(route_hex, by= "RouteId") %>% 
-  mutate(sd_tempMi = sd(minTemp),
-         sd_tempMe = sd(meanTemp))
+  left_join(route_hex, by= "RouteId") #%>%
+BirdHWA <- BirdHWA %>% 
+  mutate(sd_tempMi = sapply(BirdHWA[which(BirdHWA$Infested == T), 16], sd),
+         sd_tempMe = sapply(BirdHWA[which(BirdHWA$Infested == T), 17], sd))
 
 ## Save!  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
