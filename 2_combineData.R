@@ -105,6 +105,10 @@ BirdHWA <- stateData %>%
 
 if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
 
+## make no infestation have YearInfested equals to zero
+BirdHWA <- BirdHWA %>% 
+  mutate(YearInfested = ifelse(YearInfested == Inf, 0, YearInfested))
+
 ## Combine data sets: add temperature data -------------------
 # temperature data is in °C * 10
 climate <- raster::getData('worldclim', var = 'bio', res = 2.5)
