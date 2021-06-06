@@ -140,8 +140,8 @@ BirdHWA <- BirdHWA %>%
   left_join(tempDF, by = c("RouteId")) %>% 
   left_join(route_hex, by= "RouteId") #%>%
 BirdHWA <- BirdHWA %>% 
-  mutate(sd_tempMi = sapply(BirdHWA[which(BirdHWA$Infested == T), 16], sd),
-         sd_tempMe = sapply(BirdHWA[which(BirdHWA$Infested == T), 17], sd))
+  mutate(sd_tempMi = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 16]), sd),
+         sd_tempMe = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 17]), sd))
 
 ## Save!  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
