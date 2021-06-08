@@ -64,7 +64,7 @@ single_sps <- function(species){
            temp_mean_scale = (meanTemp - mean_tempMe)/sd_tempMe)
  
   filename <- paste("data/species/", species, ".rds",sep= "")
-  
+  par(mfrow=c(1,2))
   hist(BIRD3$temp_min_scale)
   plot(BIRD3$temp_min_scale, BIRD3$minTemp)
     
