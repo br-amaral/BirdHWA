@@ -1,9 +1,13 @@
 # 6_model
 
 # Input: 
-#        
+#        /data/hexmap.graph
+#        data/src/sps_list.csv  
+#        data/species/{species}.rds
+#        5_formulasModels.R (sourcing)       
 # Output: 
-#         
+#        data/models_res/{species} (folder)
+#        data/models_res/{species}/{name}.rds (files)
 
 library(INLA)
 library(tidyverse)
@@ -36,6 +40,7 @@ run_model <- function(offset, BIRDx, formula){
     select(RouteId, maxYear) %>% 
     distinct()
   
+  ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
   for(i in nrow(BIRDx)){
     if(BIRDx$YearInfested[i] == 0){
       off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
