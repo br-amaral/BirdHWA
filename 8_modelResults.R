@@ -22,7 +22,7 @@ all_combinations <- tibble(
   model = seq_along(formulas),
   formula = formulas,
   year = list(offsets),
-  species = list(sps_list$SpeciesCode[5])  # change species here
+  species = list(sps_list$SpeciesCode)  # change species here
 ) %>%
   unnest(year) %>%
   unnest(species) %>%
