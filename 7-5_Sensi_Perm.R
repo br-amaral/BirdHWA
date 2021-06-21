@@ -14,7 +14,7 @@ library(tidyverse)
 library(glue)
 
 species <- "ACFL"
-offsets <- 2
+offsets <- off <- 2
 mod <- 1
 
 set.seed(10)
@@ -45,7 +45,7 @@ create_data_sensi <- function(offset, BIRDx) {
   for(i in nrow(BIRDx)){
     if(BIRDx$YearInfested[i] == 0){
       off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- off_noin
+      BIRDx$year_offset[i] <- as.numeric(off_noin)
     }
   }
   return(BIRDx)
@@ -61,9 +61,9 @@ create_data_perm <- function(offset, BIRDin#, perms
   inf_range <- c(min(inf_range$Year), max(inf_range$Year))
   inf_dif <- inf_range[2] - inf_range[1]
   
-  res_tib1 <- as.list(matrix(NA, nrow = perms))
+  #res_tib1 <- as.list(matrix(NA, nrow = perms))
   
-  for(i in 1:perms) {
+  #for(i in 1:perms) {
     ## Create an year offset for that species ------------------
     
     BIRDx <- BIRDin %>% 
@@ -92,15 +92,15 @@ create_data_perm <- function(offset, BIRDin#, perms
     for(j in nrow(BIRDx)){
       if(BIRDx$YearInfested[j] == 0){
         off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[j]), 2]
-        BIRDx$year_offset[j] <- off_noin
+        BIRDx$year_offset[j] <- as.numeric(off_noin)
       }
-    }
-    res_tib1[[i]] <- BIRDx
+    #}
+    #res_tib1[[i]] <- BIRDx
   }
-  return(res_tib1)
+  return(BIRDx)
 }
 
-run_model <- function(offset, BIRDx_sub, formula) {
+run_model <- function(BIRDx_sub, formula) {
   model <- inla(formula, family = "poisson", data = BIRDx_sub, 
                 control.predictor = list(compute = TRUE), 
                 control.compute = list(waic = TRUE, dic = TRUE, cpo = TRUE))
@@ -118,7 +118,7 @@ run_sensi <- function(species) {
 
     BIRDtab3 <- BIRD[which(BIRD$RouteId != as.character(routes[i,1])),]
     
-    resu <- run_model(off, BIRDtab3, formula)
+    resu <- run_model(BIRDtab3, formula)
     name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
@@ -130,15 +130,15 @@ run_sensi <- function(species) {
   }
 }
 
-run_perm <- function(species, perms) {
+run_perm <- function(species, perms, off) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
   
   for(i in 1:perms){
     
-    BIRDtab2 <- create_data_perm(offset, BIRDtab)
+    BIRDtab2 <- create_data_perm(off, BIRDtab)
     
-    resu <- run_model(off, BIRDtab2, formula)
+    resu <- run_model(BIRDtab2, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
     assign(name, resu)
     print(name)
