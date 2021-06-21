@@ -14,7 +14,7 @@ library(tidyverse)
 library(glue)
 
 species <- "ACFL"
-offsets <- off <- 2
+off <- 2
 mod <- 1
 
 set.seed(10)
@@ -24,12 +24,11 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
-create_data_sensi <- function(offset, BIRDx) {
-  off <- offset
+create_data_sensi <- function(off, BIRDx) {
   ## Create an year offset for that species ------------------  
   BIRDx <- BIRDx %>% 
     # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   
@@ -51,10 +50,9 @@ create_data_sensi <- function(offset, BIRDx) {
   return(BIRDx)
 }
 
-create_data_perm <- function(offset, BIRDin#, perms
+create_data_perm <- function(off, BIRDin#, perms
                              ) {
-  off <- offset
-  
+
   inf_range <- BIRDin %>% 
     filter(Infested == T) %>% 
     select(Year)
@@ -74,7 +72,7 @@ create_data_perm <- function(offset, BIRDin#, perms
                         ceiling(runif(1, min(Year), max(Year))),
                       YearInfested)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
              # infoff: 'infested' route according to the delay in the effect (offset)
              infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
@@ -110,7 +108,7 @@ run_model <- function(BIRDx_sub, formula) {
 run_sensi <- function(species) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
-  BIRDtab2 <- create_data_sensi(offset, BIRDtab)
+  BIRDtab2 <- create_data_sensi(off, BIRDtab)
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
   
@@ -150,7 +148,7 @@ run_perm <- function(species, perms, off) {
   }
 }
 
-run_perm(species, perms = 10)
+run_perm(species, perms = 10, off = off)
 
 
 lapply(sps_list$SpeciesCode, run_sensi)
