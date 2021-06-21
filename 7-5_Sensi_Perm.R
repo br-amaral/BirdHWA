@@ -114,13 +114,14 @@ run_sensi <- function(species) {
   
   for(i in 1:nrow(routes)){
 
-    BIRDtab3 <- BIRD[which(BIRD$RouteId != as.character(routes[i,1])),]
+    BIRDtab3 <- BIRDtab2[which(BIRDtab2$RouteId != as.character(routes[i,1])),]
     
     resu <- run_model(BIRDtab3, formula)
     name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
+    dir.create(glue("data/models_res/{species}"))
     dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
@@ -141,6 +142,7 @@ run_perm <- function(species, perms, off) {
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
+    dir.create(glue("data/models_res/{species}"))
     dir.create(glue("data/models_res/{species}/perm"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
