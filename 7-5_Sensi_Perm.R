@@ -51,7 +51,8 @@ create_data_sensi <- function(offset, BIRDx) {
   return(BIRDx)
 }
 
-create_data_perm <- function(offset, BIRDin, perms) {
+create_data_perm <- function(offset, BIRDin#, perms
+                             ) {
   off <- offset
   
   inf_range <- BIRDin %>% 
@@ -62,15 +63,16 @@ create_data_perm <- function(offset, BIRDin, perms) {
   
   res_tib1 <- as.list(matrix(NA, nrow = perms))
   
-  for(i in 1:perms) {
+  #for(i in 1:perms) {
     ## Create an year offset for that species ------------------
     
     BIRDx <- BIRDin %>% 
       group_by(RouteId) %>% 
       mutate(YearInfested = 
                ifelse(YearInfested != 0, 
-                      Year - YearInfested - offset + ceiling(runif(1, min(Year), max(Year))),
-                      year_offset)) %>% 
+                      #Year - YearInfested - offset + 
+                        ceiling(runif(1, min(Year), max(Year))),
+                      YearInfested)) %>% 
       ungroup() %>% 
       mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, year_offset),
              # infoff: 'infested' route according to the delay in the effect (offset)
@@ -93,7 +95,7 @@ create_data_perm <- function(offset, BIRDin, perms) {
         BIRDx$year_offset[i] <- off_noin
       }
     }
-  }
+  #}
   return(BIRDx)
 }
 
@@ -120,7 +122,7 @@ run_sensi <- function(species) {
     name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
-    name2 <- glue("data/models_res/{species}/sensi/{name}_{routes[i,1]}.rds", sep= "")
+    name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
     dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
@@ -128,22 +130,20 @@ run_sensi <- function(species) {
   }
 }
 
-run_sensi <- function(species) {
+run_perm <- function(species, perms) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
-  BIRDtab2 <- create_data(offset, BIRDtab)
   
-  
-  for(i in 1:nrow(routes)){
+  for(i in 1:perms){
     
-    BIRDtab3 <- BIRD[which(BIRD$RouteId != as.character(routes[i,1])),]
+    BIRDtab2 <- create_data_perm(offset, BIRDtab)
     
-    resu <- run_model(off, BIRDtab3, formula)
-    name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
+    resu <- run_model(off, BIRDtab2, formula)
+    name <- glue("{species}_model_{off}yrs_perm{i}")
     assign(name, resu)
     print(name)
-    name2 <- glue("data/models_res/{species}/sensi/{name}_{routes[i,1]}.rds", sep= "")
-    dir.create(glue("data/models_res/{species}/sensi"))
+    name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
+    dir.create(glue("data/models_res/{species}/perm"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab)
