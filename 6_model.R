@@ -44,9 +44,17 @@ run_model <- function(offset, BIRDx, formula){
   for(i in nrow(BIRDx)){
     if(BIRDx$YearInfested[i] == 0){
       off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- off_noin
+      BIRDx$year_offset[i] <- as.numeric(off_noin)
     }
   }
+  ## only infested routes
+  BIRDx <- BIRDx %>% 
+    filter(YearInfested != 0,
+           year_offset > -20 & year_offset < 20) %>% 
+    group_by(RouteId) %>% 
+    mutate(max = max(year_offset)) %>% 
+    filter(max > 9) %>% 
+    ungroup()
   
   model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
@@ -61,7 +69,7 @@ run_combinations <- function(species){
       off <- offsets[j]
       SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
       BIRDtab <- readRDS(SPECIES_MOD_DAT)
-      resu <- run_model(off,BIRDtab,formula)
+      resu <- run_model(off, BIRDtab, formula)
       name <- glue("{species}_model{i}_{off}yrs")
       assign(name,resu)
       print(name)
