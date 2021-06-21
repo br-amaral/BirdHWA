@@ -63,7 +63,7 @@ create_data_perm <- function(offset, BIRDin#, perms
   
   res_tib1 <- as.list(matrix(NA, nrow = perms))
   
-  #for(i in 1:perms) {
+  for(i in 1:perms) {
     ## Create an year offset for that species ------------------
     
     BIRDx <- BIRDin %>% 
@@ -74,7 +74,7 @@ create_data_perm <- function(offset, BIRDin#, perms
                         ceiling(runif(1, min(Year), max(Year))),
                       YearInfested)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, year_offset),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
              # infoff: 'infested' route according to the delay in the effect (offset)
              infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
@@ -89,16 +89,16 @@ create_data_perm <- function(offset, BIRDin#, perms
       distinct()
     
     ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-    for(i in nrow(BIRDx)){
-      if(BIRDx$YearInfested[i] == 0){
-        off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-        BIRDx$year_offset[i] <- off_noin
+    for(j in nrow(BIRDx)){
+      if(BIRDx$YearInfested[j] == 0){
+        off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[j]), 2]
+        BIRDx$year_offset[j] <- off_noin
       }
     }
-  #}
-  return(BIRDx)
+    res_tib1[[i]] <- BIRDx
+  }
+  return(res_tib1)
 }
-
 
 run_model <- function(offset, BIRDx_sub, formula) {
   model <- inla(formula, family = "poisson", data = BIRDx_sub, 
@@ -149,6 +149,9 @@ run_perm <- function(species, perms) {
     rm(BIRDtab)
   }
 }
+
+run_perm(species, perms = 10)
+
 
 lapply(sps_list$SpeciesCode, run_sensi)
 lapply(sps_list$SpeciesCode, run_perm)
