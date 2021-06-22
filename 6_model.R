@@ -22,12 +22,12 @@ hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 
 offsets <- seq(2,16,1)
 
-run_model <- function(offset, BIRDx, formula){
+run_model <- function(off, BIRDx, formula){
 
 ## Create an year offset for that species ------------------  
   BIRDx <- BIRDx %>% 
            # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   
