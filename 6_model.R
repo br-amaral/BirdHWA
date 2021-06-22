@@ -41,10 +41,10 @@ run_model <- function(offset, BIRDx, formula){
     distinct()
   
   ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-  for(i in nrow(BIRDx)){
+  for(i in 1:nrow(BIRDx)){
     if(BIRDx$YearInfested[i] == 0){
       off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- BIRD$Year[i] - as.numeric(off_noin)
+      BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin)
     }
   }
   ## only infested routes
