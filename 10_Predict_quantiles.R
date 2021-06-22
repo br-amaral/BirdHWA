@@ -5,7 +5,7 @@ SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
 BEST_MOD <- glue("data/models_res/{species}/{species}_bestmod.rds")
 BEST_OFF <- glue("data/models_res/{species}/{species}_bestoff.rds")
 
-BIRDtab <- readRDS(SPECIES_MOD_DAT)
+BIRDx <- readRDS(SPECIES_MOD_DAT)
 my_tibble <- readRDS(SUM_NAME)
 year_ <- off <- readRDS(BEST_OFF)
 mod_ <- readRDS(BEST_MOD)
@@ -22,7 +22,7 @@ create_pred_off <- function(offset_v){
 }
 
 ## Create an year offset for that species ------------------  
-BIRDx <- BIRDtab %>% 
+BIRDx <- BIRDx %>% 
   # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
   mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
          # infoff: 'infested' route according to the delay in the effect (offset)
@@ -45,7 +45,7 @@ for(i in nrow(BIRDx)){
   }
 }
 ## only infested routes
-BIRDx2 <- BIRDx %>% 
+BIRDx <- BIRDx %>% 
   filter(YearInfested != 0,
          year_offset > -20 & year_offset < 20) %>% 
   group_by(RouteId) %>% 
@@ -53,15 +53,11 @@ BIRDx2 <- BIRDx %>%
   filter(max > 9) %>% 
   ungroup()
 
-BIRDx2INF <- BIRDx2[which(BIRDx2$Infested == T),]
+t1 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[1]
+t2 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[2]
+t3 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[3]
 
-mean(BIRDx2INF$temp_min_scale)
-
-t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1]
-t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2]
-t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3]
-
-temps <- BIRDx2INF %>% 
+temps <- BIRDx %>% 
   select(temp_min_scale, RouteId) %>% 
   distinct()
 
@@ -239,7 +235,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
-maxi <- 0.6
+maxi <- 0.8
 
 predict.inla2(spsr, mod_, t1, maxi)
 predict.inla2(spsr, mod_, t2, maxi)
