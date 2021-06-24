@@ -5,10 +5,10 @@ library(lme4)
 library(tidyverse)
 library(glue)
 
-species <- "RBNU"
+species <- "BHVI"
 n_data <- read_rds(glue("data/species/{species}.rds")) 
 ## Create an year offset for that species ------------------  
-offset <- 0
+offset <- 16
 BIRD <- n_data %>% 
   # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
   mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, 0),
@@ -37,12 +37,14 @@ BIRDxi <- BIRD %>%
   group_by(RouteId) %>% 
   mutate(max = max(year_offset)) %>% 
   filter(max > 9) %>% 
-  ungroup()
+  ungroup() %>% 
+  select(-max)
 
 BIRDxb <- BIRD %>% 
   filter(year_offset > -20 & year_offset < 20) %>% 
   group_by(RouteId) %>% 
   filter(YearInfested == 0) 
+
 BIRDxb <- rbind(BIRDxb, BIRDxi)
 
 temps <- BIRDxi %>% 
