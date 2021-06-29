@@ -25,8 +25,9 @@ offsets <- seq(2,16,1)
 run_model <- function(off, BIRDx, formula){
 
 ## Create an year offset for that species ------------------  
-  BIRDx <- BIRDx %>% 
-           # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
+ # BIRDx <- BIRDx %>% 
+   BIRDx <- BIRDtab %>% 
+    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
@@ -48,13 +49,14 @@ run_model <- function(off, BIRDx, formula){
     }
   }
   ## only infested routes
-  BIRDx <- BIRDx %>% 
+  BIRDx2 <- BIRDx %>% 
     filter(YearInfested != 0,
            year_offset > -20 & year_offset < 20) %>% 
     group_by(RouteId) %>% 
     mutate(max = max(year_offset)) %>% 
-    filter(max > 9) %>% 
-    ungroup()
+    ungroup() %>% 
+    filter(max > 9)
+    
   
   model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
@@ -73,7 +75,7 @@ run_combinations <- function(species){
       name <- glue("{species}_model{i}_{off}yrs")
       assign(name,resu)
       print(name)
-      name2 <- glue("data/models_res/{species}/{name}.rds", sep= "")
+      name2 <- glue("data/models_res/{species}/{name}no9.rds", sep= "")
       dir.create(glue("data/models_res/{species}"))
       saveRDS(object = get(name), file = name2)
       rm(resu)
@@ -81,6 +83,9 @@ run_combinations <- function(species){
     }
   }
 }
+
+run_combinations("BHVI")
+
 
 lapply(sps_list$SpeciesCode, run_combinations)
 
