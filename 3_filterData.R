@@ -44,13 +44,14 @@ first_obs <- BirdHWA_n3 %>%
   filter(Year == min(Year)) %>% 
   slice(1) %>%   # takes the first occurrence if there is a tie
   ungroup() %>%
-    mutate(NewObserver = T)
+  mutate(NewObserver = T) %>% 
+  select(-ObserverType)
 
-BirdHWA_n4 <- left_join(BirdHWA_n3,first_obs,
+BirdHWA_n4 <- left_join(BirdHWA_n3, first_obs,
                         by = c('RouteId','Year','ObserverId')) %>% 
-  mutate(NewObserver = replace_na(NewObserver, F)) %>% 
+  mutate(NewObserver = replace_na(NewObserver, F)) %>%
   relocate(RouteId, StateNum, Route, Year,
-           SpeciesId, SpeciesCode, SpeciesName, SpeciesSciName,SpeciesTotal,
+           SpeciesId, SpeciesCode, SpeciesName, SpeciesSciName, SpeciesTotal,
            Infested, YearInfested, yrhwa,
            Latitude, Longitude,
            ObserverId, ObserverType, ObserverRoute, NewObserver)

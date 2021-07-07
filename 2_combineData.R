@@ -91,6 +91,10 @@ latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
   mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
   relocate(RouteId)
 
+## select only routes in hemlock range
+stateData <- stateData %>% 
+  filter(RouteId %in% infestations$RouteId)
+
 ## Combine data sets: infestation, species, observer and lat long  --------------------
 # single tibble with all the information
 BirdHWA <- stateData %>%
@@ -100,6 +104,10 @@ BirdHWA <- stateData %>%
   left_join(latlong, by = c("StateNum", "Route", "RouteId"))
 
 if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
+
+## make no infestation have YearInfested equals to zero
+BirdHWA <- BirdHWA %>% 
+  mutate(YearInfested = ifelse(YearInfested == Inf, 0, YearInfested))
 
 ## Combine data sets: add temperature data -------------------
 # temperature data is in °C * 10
@@ -130,9 +138,10 @@ route_hex <- read_rds(HEXAGON_PATH)
 
 BirdHWA <- BirdHWA %>%
   left_join(tempDF, by = c("RouteId")) %>% 
-  left_join(route_hex, by= "RouteId") %>% 
-  mutate(sd_tempMi = sd(minTemp),
-         sd_tempMe = sd(meanTemp))
+  left_join(route_hex, by= "RouteId") #%>%
+BirdHWA <- BirdHWA %>% 
+  mutate(sd_tempMi = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 16]), sd),
+         sd_tempMe = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 17]), sd))
 
 ## Save!  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 

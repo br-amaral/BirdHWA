@@ -58,12 +58,15 @@ single_sps <- function(species){
   ## standardize temperature  -----------------
   # mean by species, sd for all data (calculated in combineData.R)
   BIRD3 <- BIRD2 %>% 
-    mutate(min_tempMe = mean(minTemp),
-           mean_tempMe = mean(meanTemp),
+    mutate(min_tempMe = mean(BIRD2$minTemp),
+           mean_tempMe = mean(BIRD2$meanTemp),
            temp_min_scale = (minTemp - min_tempMe)/sd_tempMi,
            temp_mean_scale = (meanTemp - mean_tempMe)/sd_tempMe)
  
   filename <- paste("data/species/", species, ".rds",sep= "")
+  par(mfrow=c(1,2))
+  hist(BIRD3$temp_min_scale)
+  plot(BIRD3$temp_min_scale, BIRD3$minTemp)
     
   write_rds(BIRD3, file = filename)
   

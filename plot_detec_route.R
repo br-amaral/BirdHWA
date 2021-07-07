@@ -29,7 +29,7 @@ plot_heat <- function(BIRDdat, mindec, maxlim){
 
 species <- "ACFL"
 mindec <- 0
-maxdec <- 30
+maxdec <- 27
 
 #plot_data_dist <- function(species, mindec, maxdec) {
   LOAD_SINGLE_SPS <- glue("{SINGLE_SPS}/{species}.rds")
