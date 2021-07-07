@@ -14,7 +14,7 @@ formula1 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
 # minus infoff: no initial change, broken stick with 2 connected lines ----------
-formula2 <- SpeciesTotal ~ 1 + 
+formula3 <- SpeciesTotal ~ 1 + 
   year_offset + 
   year_offset : infoff +
   NewObserver +
@@ -26,7 +26,7 @@ formula2 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
 # minus year_offset : infoff: no change in trend - one time effect ----------
-formula3 <- SpeciesTotal ~ 1 + 
+formula2 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
   NewObserver +
@@ -77,7 +77,7 @@ formula6 <- SpeciesTotal ~ 1 +
 # MODELS WITH NO TEMPERATURE:  --------------------
 # null model ----------
 # only intercept, year_offset, NewObservers
-formula7 <- SpeciesTotal ~ 1 + 
+formula10 <- SpeciesTotal ~ 1 + 
   year_offset + 
   NewObserver +
   f(ObserverRoute, model="iid") + 
@@ -103,7 +103,7 @@ formula9 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
 ## intercept, year_offset, NewObservers + intercept and trend change ----------
-formula10 <- SpeciesTotal ~ 1 + 
+formula7 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
   year_offset : infoff +
