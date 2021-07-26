@@ -6,7 +6,7 @@ library(tidyselect)
 
 ### choose species here! species list is: 
 ###  BHVI BLBW BTNW HETH MAWA RBNU ACFL  
-spsr <- "ACFL"
+spsr <- "RBNU"
 
 source("7_extract_fixed_pars.R")
 
@@ -64,8 +64,8 @@ pars_models <- as_tibble(rbind(pars_models_FUNC(1),
 
 if(nrow(waic_best) != 1) {stop("\n\n\n\n two models tied as the best according to WAIC - pick one \n\n\n\n")}
 
-year_ <- waic_best$year
-mod_ <- waic_best$model
+(year_ <- waic_best$year)
+(mod_ <- waic_best$model)
 nacol <- c("mean", "low", "up","par")
 par_tib <- pars_models %>% 
   filter(model == mod_,
@@ -134,12 +134,15 @@ plot_var(summary_results2, "infoff")
 plot_var(summary_results2, "year_offset_infoff")
 plot_var(summary_results2, "year_offset_infoff_temp_min_scale")
 
-SUM_NAME <- glue("data/models_res/{species}/{species}_bestmodres.rds")
-BEST_MOD <- glue("data/models_res/{species}/{species}_bestmod.rds")
-BEST_OFF <- glue("data/models_res/{species}/{species}_bestoff.rds")
-PARS_RES <- glue("data/models_res/{species}/{species}_partib.rds")
+SUM_NAME <- glue("data/models_res/{spsr}/{spsr}_bestmodres.rds")
+BEST_MOD <- glue("data/models_res/{spsr}/{spsr}_bestmod.rds")
+BEST_OFF <- glue("data/models_res/{spsr}/{spsr}_bestoff.rds")
+PARS_RES <- glue("data/models_res/{spsr}/{spsr}_partib.rds")
+
+dir.create(glue("data/models_res/{spsr}"))
 
 write_rds(summary_results2, file = SUM_NAME)
 write_rds(mod_, file = BEST_MOD)
 write_rds(year_, file = BEST_OFF)
 write_rds(par_tib, file = PARS_RES)
+
