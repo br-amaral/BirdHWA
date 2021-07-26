@@ -159,7 +159,7 @@ run_sensi <- function(species, offsets) {
     dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
-    rm(BIRDtab)
+    rm(BIRDtab3)
   }
 }
 
