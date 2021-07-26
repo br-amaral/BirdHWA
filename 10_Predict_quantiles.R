@@ -1,4 +1,4 @@
-species <- "ACFL"
+species <- spsr #"HETH"
 
 SUM_NAME <- glue("data/models_res/{species}/{species}_bestmodres.rds")
 SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
@@ -41,7 +41,7 @@ rout_notinf <- BIRDx %>%
 for(i in nrow(BIRDx)){
   if(BIRDx$YearInfested[i] == 0){
     off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-    BIRDx$year_offset[i] <- as.numeric(off_noin)
+    BIRDx$year_offset[i] <- BIRD$Year[i] - as.numeric(off_noin)
   }
 }
 ## only infested routes
@@ -235,7 +235,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
-maxi <- 0.8
+maxi <- 0.4
 
 predict.inla2(spsr, mod_, t1, maxi)
 predict.inla2(spsr, mod_, t2, maxi)
@@ -244,7 +244,7 @@ predict.inla2(spsr, mod_, t3, maxi)
 unique(BIRDtab$min_tempMe)/100
 unique(BIRDtab$sd_tempMi)/100
 
-quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
+quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))
 
 
 
