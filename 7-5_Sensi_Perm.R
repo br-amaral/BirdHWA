@@ -1,4 +1,6 @@
 # 7.5_Sensitivity and permutation test of the best model
+# sensitivity is to remove each route at a time and re-fit the model
+# permutation is to randomize the infestation year x times and refit the model
 
 # Input: same as the 6_model:
 #        /data/hexmap.graph
@@ -14,7 +16,7 @@ library(tidyverse)
 library(glue)
 
 species <- "ACFL"
-off <- 2
+offsets <- 2
 mod <- 1
 
 set.seed(10)
@@ -24,13 +26,14 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
-create_data_sensi <- function(off, BIRDx) {
+create_data_sensi <- function(offset2, BIRDx) {
+  off <- offset2
   ## Create an year offset for that species ------------------  
   BIRDx <- BIRDx %>% 
     # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
-           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
+           infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
   
   rout_notinf <- BIRDx %>% 
     select(RouteId, Year, YearInfested, Infested) %>% 
@@ -41,40 +44,56 @@ create_data_sensi <- function(off, BIRDx) {
     select(RouteId, maxYear) %>% 
     distinct()
   
-  for(i in nrow(BIRDx)){
+  ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
+  for(i in 1:nrow(BIRDx)){
     if(BIRDx$YearInfested[i] == 0){
       off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- as.numeric(off_noin)
+      BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin) + off - 1
     }
   }
-  return(BIRDx)
+  ## all filters ----------------------------
+  BIRDx1 <- BIRDx %>% 
+    filter(YearInfested != 0,                               # only routes that were infested at some point
+           year_offset > -20 & year_offset < 20) %>%        # look only +-20 years before/after infestation
+    group_by(RouteId) %>% 
+    group_split()
+  
+  for(i in 1:length(BIRDx1)){                               # look only at routes that were infested for at least 10 years
+    a <- BIRDx1[[i]]
+    maxi <- max(a$year_offset)
+    if(maxi < 10) {BIRDx1[[i]] <- NULL }
+  }
+  
+  BIRDx2_1 <- data.table::rbindlist(BIRDx1) %>% 
+    as_tibble()
+  
+  return(BIRDx2_1)
 }
 
-create_data_perm <- function(off, BIRDin#, perms
-                             ) {
-
+create_data_perm <- function(offset, BIRDin, perms) {
+  off <- offset
+  
   inf_range <- BIRDin %>% 
     filter(Infested == T) %>% 
     select(Year)
   inf_range <- c(min(inf_range$Year), max(inf_range$Year))
   inf_dif <- inf_range[2] - inf_range[1]
   
-  #res_tib1 <- as.list(matrix(NA, nrow = perms))
+  res_tib1 <- as.list(matrix(NA, nrow = perms))
   
-  #for(i in 1:perms) {
+  for(i in 1:perms) {
     ## Create an year offset for that species ------------------
     
     BIRDx <- BIRDin %>% 
       group_by(RouteId) %>% 
       mutate(YearInfested = 
                ifelse(YearInfested != 0, 
-                      #Year - YearInfested - offset + 
-                        ceiling(runif(1, min(Year), max(Year))),
-                      YearInfested)) %>% 
+                      Year - YearInfested - offset + ceiling(runif(1, min(Year), max(Year))),
+                      year_offset)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, year_offset),
              # infoff: 'infested' route according to the delay in the effect (offset)
-             infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)),
+             infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
     
     rout_notinf <- BIRDx %>% 
@@ -87,33 +106,49 @@ create_data_perm <- function(off, BIRDin#, perms
       distinct()
     
     ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-    for(j in nrow(BIRDx)){
-      if(BIRDx$YearInfested[j] == 0){
-        off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[j]), 2]
-        BIRDx$year_offset[j] <- as.numeric(off_noin)
+    for(i in 1:nrow(BIRDx)){
+      if(BIRDx$YearInfested[i] == 0){
+        off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
+        BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin) + off - 1
       }
-    #}
-    #res_tib1[[i]] <- BIRDx
+    }
+    ## all filters ----------------------------
+    BIRDx1 <- BIRDx %>% 
+      filter(YearInfested != 0,                               # only routes that were infested at some point
+             year_offset > -20 & year_offset < 20) %>%        # look only +-20 years before/after infestation
+      group_by(RouteId) %>% 
+      group_split()
+    
+    for(i in 1:length(BIRDx1)){                               # look only at routes that were infested for at least 10 years
+      a <- BIRDx1[[i]]
+      maxi <- max(a$year_offset)
+      if(maxi < 10) {BIRDx1[[i]] <- NULL }
+    }
+    
+    BIRDx2_1 <- data.table::rbindlist(BIRDx1) %>% 
+      as_tibble()
   }
-  return(BIRDx)
+  return(BIRDx2_1)
 }
 
+
 run_model <- function(BIRDx_sub, formula) {
-  model <- inla(formula, family = "poisson", data = BIRDx_sub, 
-                control.predictor = list(compute = TRUE), 
-                control.compute = list(waic = TRUE, dic = TRUE, cpo = TRUE))
+  model <- inla(formula, family="poisson", data=BIRDx_sub, 
+                control.predictor=list(compute=TRUE), 
+                control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   return(model)
 }
 
-run_sensi <- function(species) {
+run_sensi <- function(species, offsets) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
-  BIRDtab2 <- create_data_sensi(off, BIRDtab)
+  BIRDtab2 <- create_data_sensi(offsets, BIRDtab)
+  off <- offsets
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
   
   for(i in 1:nrow(routes)){
-
+    
     BIRDtab3 <- BIRDtab2[which(BIRDtab2$RouteId != as.character(routes[i,1])),]
     
     resu <- run_model(BIRDtab3, formula)
@@ -121,7 +156,6 @@ run_sensi <- function(species) {
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
-    dir.create(glue("data/models_res/{species}"))
     dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
@@ -150,8 +184,8 @@ run_perm <- function(species, perms, off) {
   }
 }
 
-run_perm(species, perms = 10, off = off)
+run_sensi(species, offsets)
 
 
-lapply(sps_list$SpeciesCode, run_sensi)
-lapply(sps_list$SpeciesCode, run_perm)
+lapply(species, run_sensi)
+lapply(species, run_perm)
