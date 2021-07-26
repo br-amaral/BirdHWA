@@ -26,6 +26,7 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
+
 create_data_sensi <- function(offset2, BIRDx) {
   off <- offset2
   ## Create an year offset for that species ------------------  
@@ -70,8 +71,8 @@ create_data_sensi <- function(offset2, BIRDx) {
   return(BIRDx2_1)
 }
 
-create_data_perm <- function(offset, BIRDin, perms) {
-  off <- offsets
+create_data_perm <- function(offset2, BIRDin, perms) {
+  off <- offset2
   
   inf_range <- BIRDin %>% 
     filter(Infested == T) %>% 
@@ -139,6 +140,7 @@ run_model <- function(BIRDx_sub, formula) {
   return(model)
 }
 
+
 run_sensi <- function(species, offsets) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
@@ -163,7 +165,8 @@ run_sensi <- function(species, offsets) {
   }
 }
 
-run_perm <- function(species, perm, off) {
+run_perm <- function(species, perm, offsets) {
+  off <- offsets
   perms <- perm
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
@@ -188,4 +191,4 @@ run_perm <- function(species, perm, off) {
 
 
 run_sensi(species = species, offsets = 1)
-run_perm(species = species, perm = 10, off = 1)
+run_perm(species = species, perm = 10, offsets = 1)
