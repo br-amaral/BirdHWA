@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-species <- "ACFL"
+species <- "BHVI"
 offsets <- 2
 mod <- 1
 
@@ -71,7 +71,7 @@ create_data_sensi <- function(offset2, BIRDx) {
 }
 
 create_data_perm <- function(offset, BIRDin, perms) {
-  off <- offset
+  off <- offsets
   
   inf_range <- BIRDin %>% 
     filter(Infested == T) %>% 
@@ -88,10 +88,10 @@ create_data_perm <- function(offset, BIRDin, perms) {
       group_by(RouteId) %>% 
       mutate(YearInfested = 
                ifelse(YearInfested != 0, 
-                      Year - YearInfested - offset + ceiling(runif(1, min(Year), max(Year))),
-                      year_offset)) %>% 
+                      ceiling(runif(1, min(Year), max(Year))),
+                      YearInfested)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, year_offset),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
              # infoff: 'infested' route according to the delay in the effect (offset)
              infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
@@ -163,29 +163,29 @@ run_sensi <- function(species, offsets) {
   }
 }
 
-run_perm <- function(species, perms, off) {
+run_perm <- function(species, perm, off) {
+  perms <- perm
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
   
   for(i in 1:perms){
     
-    BIRDtab2 <- create_data_perm(off, BIRDtab)
+    BIRDtab2 <- create_data_perm(off, BIRDtab, perms)
     
     resu <- run_model(BIRDtab2, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
-    dir.create(glue("data/models_res/{species}"))
-    dir.create(glue("data/models_res/{species}/perm"))
+    #dir.create(glue("data/models_res/{species}"))
+    if (i == 1) {dir.create(glue("data/models_res/{species}/perm"))}
     saveRDS(object = get(name), file = name2)
     rm(resu)
-    rm(BIRDtab)
+    rm(BIRDtab2)
+    rm(name)
   }
 }
 
-run_sensi(species, offsets)
 
-
-lapply(species, run_sensi)
-lapply(species, run_perm)
+run_sensi(species = species, offsets = 1)
+run_perm(species = species, perm = 10, off = 1)
