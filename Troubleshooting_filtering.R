@@ -6,16 +6,8 @@
 ## infested se for maior que OFFSET, nao maior que zero
 #          infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
 #          infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
-
-
-## primeiro erro - para nao infestadas, ultimo ano nao eh zero, mas sim zero menos o offset!
-#          BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin)
-#          BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin) + off - 1
-
-## MAIS OFFSERT JUMENTA
-## infested se for maior que OFFSET, nao maior que zero
-#          infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
-#          infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
+# aqui tbm:
+#          mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off , 0),
 
 
 library(INLA)
