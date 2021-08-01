@@ -32,7 +32,7 @@ create_data_sensi <- function(offset2, BIRDx) {
   ## Create an year offset for that species ------------------  
   BIRDx <- BIRDx %>% 
     # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
   
@@ -92,7 +92,7 @@ create_data_perm <- function(offset2, BIRDin, perms) {
                       ceiling(runif(1, min(Year), max(Year))),
                       YearInfested)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off, 0),
              # infoff: 'infested' route according to the delay in the effect (offset)
              infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
