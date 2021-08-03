@@ -22,7 +22,7 @@ all_combinations <- tibble(
   model = seq_along(formulas),
   formula = formulas,
   year = list(offsets),
-  species = list(sps_list$SpeciesCode)  # change species here
+  species = list(sps_list$SpeciesCode[8])  # change species here
 ) %>%
   unnest(year) %>%
   unnest(species) %>%
@@ -44,4 +44,4 @@ summary_results <- all_combinations %>%
   mutate(result = pmap(., up_res_model))
 
 #write_rds(summary_results, SUMMARY_RESULT_PATH)
-
+write_rds(summary_results, "summary_results.rds")
