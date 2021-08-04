@@ -1,16 +1,6 @@
-species <- spsr #"HETH"
-
-SUM_NAME <- glue("data/models_res/{species}/{species}_bestmodres.rds")
-SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
-BEST_MOD <- glue("data/models_res/{species}/{species}_bestmod.rds")
-BEST_OFF <- glue("data/models_res/{species}/{species}_bestoff.rds")
-
-BIRDx <- readRDS(SPECIES_MOD_DAT)
-my_tibble <- readRDS(SUM_NAME)
-year_ <- off <- readRDS(BEST_OFF)
-mod_ <- readRDS(BEST_MOD)
 
 # Make predictions with the fixed values and temperature quantiles
+my_tibble <- summary_results2
 pred_tab <- as_tibble(seq(-10,20,1)) %>% 
   rename(year = value)
 
@@ -21,50 +11,65 @@ create_pred_off <- function(offset_v){
   return(pred_tabX)
 }
 
-## Create an year offset for that species ------------------  
-BIRDx <- BIRDx %>% 
-  # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-  mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
-         # infoff: 'infested' route according to the delay in the effect (offset)
-         infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
+species <- spsr
+offset <- year_ <- 8
 
-rout_notinf <- BIRDx %>% 
-  select(RouteId, Year, YearInfested, Infested) %>% 
-  filter(YearInfested == 0) %>% 
-  distinct() %>% 
-  group_by(RouteId) %>% 
-  mutate(maxYear = max(Year)) %>% 
-  select(RouteId, maxYear) %>% 
-  distinct()
+SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
+BIRDtab <- readRDS(SPECIES_MOD_DAT)
 
-## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-for(i in nrow(BIRDx)){
-  if(BIRDx$YearInfested[i] == 0){
-    off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-    BIRDx$year_offset[i] <- BIRD$Year[i] - as.numeric(off_noin)
-  }
-}
-## only infested routes
-BIRDx <- BIRDx %>% 
-  filter(YearInfested != 0,
-         year_offset > -20 & year_offset < 20) %>% 
+BIRDx <- BIRDtab %>%  
+  # remove 20 ears before and after infestation
+  mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
+  filter(year_offset > -20 & year_offset < 20) %>% 
+  # Only routes infested for at least 10 years
   group_by(RouteId) %>% 
-  mutate(max = max(year_offset)) %>% 
+  mutate(max = max(year_offset)) %>%  
   filter(max > 9) %>% 
-  ungroup()
+  ungroup() %>% 
+  # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
+  mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
+         # infoff: 'infested' route according to the delay in the effect (offset)
+         infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA))) 
 
-t1 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[1]
-t2 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[2]
-t3 <- quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))[3]
+ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
+  geom_point() +
+  geom_smooth(aes(fill = Infested)) +
+  ggtitle("-20 e +20 filtro") +
+  theme_bw()
 
-temps <- BIRDx %>% 
-  select(temp_min_scale, RouteId) %>% 
-  distinct()
+ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
+  #   geom_point() +
+  geom_smooth() +
+  ggtitle(species) + xlim(-20,20) 
 
-ggplot(temps, aes(x = temp_min_scale)) +
+x <- as.numeric(as.matrix(BIRDx[which(BIRDx$year_offset<10),1]))
+
+BIRDx2 <- BIRDx[which(as.numeric(BIRDx$RouteId) %in%  x) ,]
+
+BIRDx2INF <- BIRDx2[which(BIRDx2$Infested == T),]
+BIRDx2NO <- BIRDx2[which(BIRDx$Infested == F),]
+
+mean(BIRDx2INF$temp_min_scale)
+mean(BIRDx2NO$temp_min_scale)
+
+#par(mfrow = c(2,1))
+#hist(BIRDx2INF$temp_min_scale)
+#hist(BIRDx2NO$temp_min_scale)
+
+temps <- rbind(
+  BIRDx2INF %>% select(temp_min_scale, Infested),
+  BIRDx2NO %>% select(temp_min_scale, Infested)
+)
+
+t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1]
+t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2]
+t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3]
+
+ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
   geom_histogram(aes(y = stat(count)/length(temps$temp_min_scale)),
                  position = "identity", alpha = .7,
                  bins = 15) + 
+  scale_fill_manual(values=c("grey10", "grey90")) +
   geom_vline(xintercept = t1, size=0.5, color = "black") +
   geom_vline(xintercept = t2, size=0.5, color = "black") +
   geom_vline(xintercept = t3, size=0.5, color = "black") +
@@ -235,7 +240,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
-maxi <- 0.4
+maxi <- 10
 
 predict.inla2(spsr, mod_, t1, maxi)
 predict.inla2(spsr, mod_, t2, maxi)
@@ -244,7 +249,7 @@ predict.inla2(spsr, mod_, t3, maxi)
 unique(BIRDtab$min_tempMe)/100
 unique(BIRDtab$sd_tempMi)/100
 
-quantile(BIRDx$temp_min_scale, c(0.2, 0.5, 0.8))
+quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
 
 
 
