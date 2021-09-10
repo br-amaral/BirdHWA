@@ -37,12 +37,6 @@ colnames(par.est.pois) <- c("year_offset","year_offset_SD",
 # sample size
 n <- 1000
 
-# bird mock data: preciso dos dados de x
-year_offset          # integer
-infoff               # binary
-NewObserver          # binary
-temp_min_scale         # numeric
-
 nroutes <- 50
 X <- matrix(NA, ncol = 4, nrow = 31 * nroutes) %>% 
   as.data.frame()
@@ -87,20 +81,6 @@ comp.est
 
 ## Adding the interaction effects ------------------------
 
-# how many times I am simulating and fitting the model
-reps <- 1000
-
-# start with only fixed
-b1 <- 1.2       # year_offset
-b2 <- -2        # infoff
-b3 <- -0.5      # NewObserver
-b4 <- 1.5       # temp_min_scale
-b5 <- -1.35
-b6 <- -0.3
-b7 <- -0.5
-b8 <- -1.1
-
-
 # matrix to store the estimates
 par.est.pois <- matrix(NA, nrow= reps, ncol = 16) %>% 
   as.data.frame
@@ -112,18 +92,6 @@ colnames(par.est.pois) <- c("year_offset","year_offset_SD",
                             "temp_min_scale:year_offset","temp_min_scale:year_offset_SD",
                             "temp_min_scale:infoff","temp_min_scale:infoff_SD",
                             "temp_min_scale:infoff:year_offset","temp_min_scale:infoff:year_offset_SD")
-     
-# sample size
-n <- 1000
-
-nroutes <- 50
-X <- matrix(NA, ncol = 4, nrow = 31 * nroutes) %>% 
-  as.data.frame()
-colnames(X) <- c("year_offset", "infoff", "NewObserver", "temp_min_scale")
-X$year_offset <- rep(seq(-10,20), nroutes)
-X$infoff <- rep(c(rep(0,16),rep(1,15)), nroutes)
-X$NewObserver <- replicate(nroutes*31, rbinom(1, size = 1, 0.5))
-X$temp_min_scale <- rnorm(nroutes*31, 0, 1.8)
 
 for (i in 1:reps){
   Y <- exp(1 + b1 * X$year_offset +
@@ -187,8 +155,6 @@ comp.est
 
 
 ## add random effects to the simulation ------------------------
-
-nroutes <- 50
 
 # similar in the same route, between years
 ra_eff_obrou <- as.vector(NA)
@@ -373,7 +339,7 @@ X2 <- X %>%
          temp_min_scale.year_offset = temp_min_scale * year_offset,
          temp_min_scale.infoff = temp_min_scale * infoff,
          temp_min_scale.infoff.year_offset = temp_min_scale * infoff * year_offset) %>% 
-  as.matr
+  as.matrix()
 
 
 for (i in 1:reps){
