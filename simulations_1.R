@@ -1,4 +1,7 @@
 library(lme4)
+library(tidyverse)
+library(dummies)
+library(simglm)
 
 set.seed.(321)
 
@@ -6,17 +9,23 @@ set.seed.(321)
 #  Page 25 of the book - starting with only fixed parameters and no package 
 
 # how many times I am simulating and fitting the model
-reps <- 1000
+reps <- 1
 
 # start with only fixed
 b1 <- 1.2       # year_offset
 b2 <- -2        # infoff
 b3 <- -0.5      # NewObserver
 b4 <- 1.5       # temp_min_scale
-# this are random
-ObserverRoute
-Year
-hexID
+# add interaction
+b5 <- -1.35
+b6 <- -0.3
+b7 <- -0.5
+b8 <- -1.1
+# add random
+b9 <- 0.4         # ObserverRoute, model="iid" 
+b10 <- 0.4        # Year, model="iid"
+# spatial effect - so far with no 'map'
+b11 <- 0.4        # hexID, model="bym"
 
 # matrix to store the estimates
 par.est.pois <- matrix(NA, nrow= reps, ncol = 8) %>% 
@@ -179,26 +188,6 @@ comp.est
 
 ## add random effects to the simulation ------------------------
 
-# how many times I am simulating and fitting the model
-reps <- 1000
-
-# start with only fixed
-b1 <- 1.2       # year_offset
-b2 <- -2        # infoff
-b3 <- -0.5      # NewObserver
-b4 <- 1.5       # temp_min_scale
-# add interaction
-b5 <- -1.35
-b6 <- -0.3
-b7 <- -0.5
-b8 <- -1.1
-# add random
-b9 <- 0.4         # ObserverRoute, model="iid" 
-b10 <- 0.4        # Year, model="iid"
-# spatial effect - so far with no 'map'
-b11 <- 0.4        # hexID, model="bym"
-
-
 nroutes <- 50
 
 # similar in the same route, between years
@@ -351,9 +340,10 @@ rownames(comp.est) <- c("estimated", "simulated")
 comp.est
 
 
-## Simulate bird numbers with existing covariates -------------------------------
+## Simulate bird numbers with existing covariate data -------------------------------
 
-BIRDtab <- readRDS("C:/Users/bzr69/OneDrive - The Pennsylvania State University/Aug5_run_models_control/data/species/HETH.rds")
+BIRDtab <- read_rds("C:/Users/bzr69/OneDrive - The Pennsylvania State University/Aug5_run_models_control/data/species/HETH.rds")
+BIRDtab <- read_rds("~/Documents/HETH.rds")
 
 offset <- 2
 
@@ -370,41 +360,69 @@ X <- BIRDtab %>%
   mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
          # infoff: 'infested' route according to the delay in the effect (offset)
          infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)),
-         ObserverRoute = as.character(ObserverRoute)
+         ObserverRoute = as.character(ObserverRoute),
+         temp_min_scale = as.numeric(temp_min_scale)
          ) 
 
-library(dummies)
-dummy(x)
+X2 <- X %>% 
+  select(year_offset,
+         infoff,
+         NewObserver,
+         temp_min_scale) %>% 
+  mutate(year_offset.infoff = year_offset * infoff,
+         temp_min_scale.year_offset = temp_min_scale * year_offset,
+         temp_min_scale.infoff = temp_min_scale * infoff,
+         temp_min_scale.infoff.year_offset = temp_min_scale * infoff * year_offset) %>% 
+  as.matr
+
 
 for (i in 1:reps){
+
+  Z1 <- model.matrix(~ 0 + X$ObserverRoute)  
+  Z2 <- model.matrix(~ 0 + as.character(X$Year))
+
+  b9_ <- rep(b9, length(unique(X$ObserverRoute)))
+  b10_ <- rep(b9, length(unique(X$Year)))
   
-  Y <- exp(1 + b1 * X$year_offset +
-             b2 * X$infoff +
-             b3 * X$NewObserver +
-             b4 * X$temp_min_scale +
-             b5 * X$year_offset * X$infoff +
-             b6 * X$year_offset * X$temp_min_scale +
-             b7 * X$temp_min_scale * X$infoff +
-             b8 * X$temp_min_scale * X$infoff * X$year_offset +
-             #b9 * factor(X$ObserverRoute) +
-             b10 * X$Year
-  )
+  betas <- c(b1, b2, b3, b4, b5, b6, b7, b8)
+    
+  Y <- exp(1 + X2 %*% betas +
+               Z1 %*% b9_ +   #X$ObserverRoute
+               Z2 %*% b10_    #X$Year
+           )
+  
+  
+#  Y <- exp(1 + b1 * X2$year_offset +
+#               b2 * X2$infoff +
+#               b3 * X2$NewObserver +
+#               b4 * X2$temp_min_scale +
+#               b5 * X2$year_offset * X$infoff +
+#               b6 * X2$year_offset * X$temp_min_scale +
+#               b7 * X2$temp_min_scale * X$infoff +
+#               b8 * X2$temp_min_scale * X$infoff * X$year_offset +
+#               b9  %*% Z1 + #X$ObserverRoute
+#               b10 %*% Z2 #X$Year
+#  )
   
   coefini <- c(model$coefficients[1:4], "ObserverRoute" = 0, "Year" = 0, model$coefficients[5:9])
   
-  m1 <- glm(Y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-              X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-              X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset,
+  X3 <- cbind(as.data.frame(X2), X$ObserverRoute, X$Year)
+  colnames(X3)[9:10] <- c("ObserverRoute", "Year")
+  
+  m1 <- glm(Y ~ X3$year_offset + X3$infoff + X3$NewObserver + X3$temp_min_scale + 
+              X3$year_offset * X3$infoff + X3$year_offset * X3$temp_min_scale +
+              X3$temp_min_scale * X3$infoff + X3$temp_min_scale * X3$infoff * X3$year_offset,
             family = poisson(link = "log"))
   
-  model <- glmer(Y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-                   X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-                   X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset +
-                   (1 | X$ObserverRoute) + 
-                   (1 | X$Year),
+  model <- glmer(Y ~ X3$year_offset + X3$infoff + X3$NewObserver + X3$temp_min_scale + 
+                   X3$year_offset * X3$infoff + X3$year_offset * X3$temp_min_scale +
+                   X3$temp_min_scale * X3$infoff + X3$temp_min_scale * X3$infoff * X3$year_offset +
+                   (1 | X3$ObserverRoute) + 
+                   (1 | X3$Year),
                  family = poisson(link = "log"),
                  start=list(fixef=coef(m1)),
-                 control = glmerControl(tolPwrss=1e-3),
+                 control=glmerControl(nAGQ0initStep=FALSE),
+                 #control = glmerControl(tolPwrss=1e-3),
                  verbose = 100)
   
   vcv <- vcov(model)
@@ -454,7 +472,30 @@ comp.est
 
 
 
+set.seed(321) 
 
+sim_arguments <- list(
+  formula = y ~ 1 + year_offset + infoff + NewObserver + temp_min_scale + 
+    year_offset * infoff + year_offset * temp_min_scale +
+    temp_min_scale * infoff + temp_min_scale * infoff * year_offset +
+    (1 | ObserverRoute) + 
+    (1 | Year),
+  reg_weights = c(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11),
+  fixed = list(year_offset = X$year_offset,
+               infoff = X$infoff,
+               NewObserver = X$NewObserver,
+               temp_min_scale = X$temp_min_scale
+               ),
+  randomeffect = list(ObserverRoute = X$ObserverRoute,
+                      Year = X$Year),
+  sample_size = nrow(X)
+)
+
+nested_data <- sim_arguments %>%
+  simulate_fixed(data = X, .) %>%  
+  simulate_randomeffect(sim_arguments) %>%
+  simulate_error(sim_arguments) %>%
+  generate_response(sim_arguments)
 
 
 
