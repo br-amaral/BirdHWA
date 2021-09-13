@@ -5,309 +5,23 @@ library(simglm)
 library(INLA)
 library(glue)
 
-set.seed.(321)
-HETH <- readRDS("~/Documents/HETH_model1_2yrs.rds")
-## SIMULATION 1 - only fied parameters -------------------------------------------------
-#  Page 25 of the book - starting with only fixed parameters and no package 
-
-# how many times I am simulating and fitting the model
-reps <- 1
-
-# start with only fixed
-b0 <- 1.12307613
-b1 <- 0.01414918       # year_offset
-b2 <- 0.01414918        # infoff
-b3 <- -0.18482579      # NewObserver
-b4 <- -1.73591647       # temp_min_scale
-# add interaction
-b5 <- -0.01591541
-b6 <- 0.06844684
-b7 <- 0.18090443
-b8 <- -0.11831990
-
-# matrix to store the estimates
-par.est.pois <- matrix(NA, nrow= reps, ncol = 8) %>% 
-  as.data.frame
-colnames(par.est.pois) <- c("year_offset","year_offset_SD",         
-                            "infoff", "infoff_SD",             
-                            "NewObserver", "NewObserver_SD",          
-                            "temp_min_scale", "temp_min_scale_SD")      
-# sample size
-n <- 1000
-
-nroutes <- 50
-X <- matrix(NA, ncol = 4, nrow = 31 * nroutes) %>% 
-  as.data.frame()
-colnames(X) <- c("year_offset", "infoff", "NewObserver", "temp_min_scale")
-X$year_offset <- rep(seq(-10,20), nroutes)
-X$infoff <- rep(c(rep(0,16),rep(1,15)), nroutes)
-X$NewObserver <- replicate(nroutes*31, rbinom(1, size = 1, 0.5))
-X$temp_min_scale <- rnorm(nroutes*31, 0, 1.8)
-
-for (i in 1:reps){
-    Y <- exp(1 + b1 * X$year_offset +
-                 b2 * X$infoff +
-                 b3 * X$NewObserver +
-                 b4 * X$temp_min_scale)
-
-  model <- glm(Y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale,
-               family = poisson)
-  
-  vcv <- vcov(model)
-  
-  par.est.pois$year_offset[i] <- model$coefficients[2]
-  par.est.pois$year_offset_SD[i] <- sqrt(diag(vcv)[2])
-  par.est.pois$infoff[i] <- model$coefficients[3]
-  par.est.pois$infoff_SD[i] <- sqrt(diag(vcv)[3])
-  par.est.pois$NewObserver[i] <- model$coefficients[4]
-  par.est.pois$NewObserver_SD[i] <- sqrt(diag(vcv)[4])
-  par.est.pois$temp_min_scale[i] <- model$coefficients[5]
-  par.est.pois$temp_min_scale_SD[i] <- sqrt(diag(vcv)[5])
-  print(i)
-}
-
-comp.est <- matrix(NA, ncol = 8, nrow= 2) %>% 
-  as.data.frame()
-comp.est[1,] <- colMeans(par.est.pois) 
-comp.est[2,1] <- b1
-comp.est[2,3] <- b2
-comp.est[2,5] <- b3
-comp.est[2,7] <- b4
-colnames(comp.est) <- colnames(par.est.pois)#[c(TRUE, FALSE)]
-rownames(comp.est) <- c("estimated", "simulated")
-comp.est
-
-## Adding the interaction effects ------------------------
-
-# matrix to store the estimates
-par.est.pois <- matrix(NA, nrow= reps, ncol = 16) %>% 
-  as.data.frame
-colnames(par.est.pois) <- c("year_offset","year_offset_SD",         
-                            "infoff", "infoff_SD",             
-                            "NewObserver", "NewObserver_SD",          
-                            "temp_min_scale", "temp_min_scale_SD",
-                            "year_offset:infoff", "year_offset:infoff_SD",
-                            "temp_min_scale:year_offset","temp_min_scale:year_offset_SD",
-                            "temp_min_scale:infoff","temp_min_scale:infoff_SD",
-                            "temp_min_scale:infoff:year_offset","temp_min_scale:infoff:year_offset_SD")
-
-for (i in 1:reps){
-  Y <- exp(1 + b1 * X$year_offset +
-               b2 * X$infoff +
-               b3 * X$NewObserver +
-               b4 * X$temp_min_scale +
-               b5 * X$year_offset * X$infoff +
-               b6 * X$year_offset * X$temp_min_scale +
-               b7 * X$temp_min_scale * X$infoff +
-               b8 * X$temp_min_scale * X$infoff * X$year_offset
-             )
-  
-  model <- glm(Y ~ X$year_offset + as.factor(X$infoff) + as.factor(X$NewObserver) + X$temp_min_scale + 
-                 X$year_offset * as.factor(X$infoff) + X$year_offset * X$temp_min_scale + 
-                 X$temp_min_scale * as.factor(X$infoff) + X$temp_min_scale * as.factor(X$infoff) * X$year_offset,
-               family = poisson)
-  
-  vcv <- vcov(model)
-  
-  par.est.pois$year_offset[i] <- model$coefficients[2]
-  par.est.pois$year_offset_SD[i] <- sqrt(diag(vcv)[2])
-  
-  par.est.pois$infoff[i] <- model$coefficients[3]
-  par.est.pois$infoff_SD[i] <- sqrt(diag(vcv)[3])
-  
-  par.est.pois$NewObserver[i] <- model$coefficients[4]
-  par.est.pois$NewObserver_SD[i] <- sqrt(diag(vcv)[4])
-  
-  par.est.pois$temp_min_scale[i] <- model$coefficients[5]
-  par.est.pois$temp_min_scale_SD[i] <- sqrt(diag(vcv)[5])
-  
-  par.est.pois$`year_offset:infoff`[i] <- model$coefficients[6]
-  par.est.pois$`year_offset:infoff_SD`[i] <- sqrt(diag(vcv)[6])
-  
-  par.est.pois$`temp_min_scale:year_offset`[i] <- model$coefficients[7]
-  par.est.pois$`temp_min_scale:year_offset_SD`[i] <- sqrt(diag(vcv)[7])
-  
-  par.est.pois$`temp_min_scale:infoff`[i] <- model$coefficients[8]
-  par.est.pois$`temp_min_scale:infoff_SD`[i] <- sqrt(diag(vcv)[8])
-  
-  par.est.pois$`temp_min_scale:infoff:year_offset`[i] <- model$coefficients[9]
-  par.est.pois$`temp_min_scale:infoff:year_offset_SD`[i] <- sqrt(diag(vcv)[9])
-  
-  print(i)
-}
-
-comp.est <- matrix(NA, ncol = 16, nrow= 2) %>% 
-  as.data.frame()
-comp.est[1,] <- colMeans(par.est.pois) 
-comp.est[2,1] <- b1
-comp.est[2,3] <- b2
-comp.est[2,5] <- b3
-comp.est[2,7] <- b4
-comp.est[2,9] <- b5
-comp.est[2,11] <- b6
-comp.est[2,13] <- b7
-comp.est[2,15] <- b8
-colnames(comp.est) <- colnames(par.est.pois)#[c(TRUE, FALSE)]
-rownames(comp.est) <- c("estimated", "simulated")
-comp.est
-
-
-## add random effects to the simulation ------------------------
-
-# similar in the same route, between years
-ra_eff_obrou <- as.vector(NA)
-for(i in 1:nroutes){
-  rout_vals_ObserverRoute <- outer(
-    rep(rnorm(n=1, 
-              mean = 0, 
-              sd = sqrt(0.6)),  ## enter the variance to get deviation
-        31),
-    rep(rnorm(n=31, 
-              mean = 0, 
-              sd = sqrt(0.0005))
-    ),
-    FUN = "+"
-  )
-  rout_vals_ObserverRoute <- rout_vals_ObserverRoute[,1]
-  ra_eff_obrou <- c(ra_eff_obrou,
-                    rout_vals_ObserverRoute   
-                    )
-}
-ra_eff_obrou <- ra_eff_obrou[-1]
-
-# similar between years
-ra_eff_years <- as.vector(NA)
-rm(rout_vals_years)
-for(j in 1:nroutes){
-  rout_vals_years <- ceiling(outer(
-    seq(1990,2020,1),
-    rep(rnorm(n=31, 
-              mean = 0, 
-              sd = sqrt(20))
-    ),
-    FUN = "-"
-  ))
-  rout_vals_years <- rout_vals_years[,1]
-  ra_eff_years <- c(ra_eff_years,
-                    rout_vals_years   
-  )
-}
-ra_eff_years <- ra_eff_years[-1]
-
-ra_eff_years2 <- (ra_eff_years - (mean(ra_eff_years)))/sd(ra_eff_years)
-
-
-
-ra_eff_hexId <- rep(rnorm(n= 31, 
-                          mean = 0, 
-                          sd = sqrt(site_var) ),   ## enter the variance to get deviation
-                    each = nroutes)
-
-
-
-# matrix to store the estimates
-par.est.pois <- matrix(NA, nrow= reps, ncol = 16) %>% 
-  as.data.frame
-colnames(par.est.pois) <- c("year_offset","year_offset_SD",         
-                            "infoff", "infoff_SD",             
-                            "NewObserver", "NewObserver_SD",          
-                            "temp_min_scale", "temp_min_scale_SD",
-                            "year_offset:infoff", "year_offset:infoff_SD",
-                            "temp_min_scale:year_offset","temp_min_scale:year_offset_SD",
-                            "temp_min_scale:infoff","temp_min_scale:infoff_SD",
-                            "temp_min_scale:infoff:year_offset","temp_min_scale:infoff:year_offset_SD")
-
-X <- matrix(NA, ncol = 4, nrow = 31 * nroutes) %>% 
-  as.data.frame()
-colnames(X) <- c("year_offset", "infoff", "NewObserver", "temp_min_scale")
-X$year_offset <- rep(seq(-10,20), nroutes)
-X$infoff <- rep(c(rep(0,16),rep(1,15)), nroutes)
-X$NewObserver <- replicate(nroutes*31, rbinom(1, size = 1, 0.5))
-X$temp_min_scale <- rnorm(nroutes*31, 0, 1.8)
-X$Year <- ra_eff_years2
-X$ObserverRoute <- ra_eff_obrou
-X$hexId
-
-
-#for (i in 1:reps){
-  lambda <- exp(1 + b1 * X$year_offset +
-             b2 * X$infoff +
-             b3 * X$NewObserver +
-             b4 * X$temp_min_scale +
-             b5 * X$year_offset * X$infoff +
-             b6 * X$year_offset * X$temp_min_scale +
-             b7 * X$temp_min_scale * X$infoff +
-             b8 * X$temp_min_scale * X$infoff * X$year_offset +
-             b9 * X$ObserverRoute +
-             b10 * X$Year
-  )
-  
-  coefini <- c(model$coefficients[1:4], "ObserverRoute" = 0, "Year" = 0, model$coefficients[5:9])
-  
-  m1 <- glm(Y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-                   X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-                   X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset,
-            family = poisson(link = "log"))
-  
-  model <- glmer(Y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-                   X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-                   X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset +
-                   (1 | X$ObserverRoute) + 
-                   (1 | X$Year),
-                 family = poisson(link = "log"),
-                 start=list(fixef=coef(m1)),
-                 control = glmerControl(tolPwrss=1e-3),
-                 verbose = 100)
-  
-  vcv <- vcov(model)
-  
-  par.est.pois$year_offset[i] <- model$coefficients[2]
-  par.est.pois$year_offset_SD[i] <- sqrt(diag(vcv)[2])
-  
-  par.est.pois$infoff[i] <- model$coefficients[3]
-  par.est.pois$infoff_SD[i] <- sqrt(diag(vcv)[3])
-  
-  par.est.pois$NewObserver[i] <- model$coefficients[4]
-  par.est.pois$NewObserver_SD[i] <- sqrt(diag(vcv)[4])
-  
-  par.est.pois$temp_min_scale[i] <- model$coefficients[5]
-  par.est.pois$temp_min_scale_SD[i] <- sqrt(diag(vcv)[5])
-  
-  par.est.pois$`year_offset:infoff`[i] <- model$coefficients[6]
-  par.est.pois$`year_offset:infoff_SD`[i] <- sqrt(diag(vcv)[6])
-  
-  par.est.pois$`temp_min_scale:year_offset`[i] <- model$coefficients[7]
-  par.est.pois$`temp_min_scale:year_offset_SD`[i] <- sqrt(diag(vcv)[7])
-  
-  par.est.pois$`temp_min_scale:infoff`[i] <- model$coefficients[8]
-  par.est.pois$`temp_min_scale:infoff_SD`[i] <- sqrt(diag(vcv)[8])
-  
-  par.est.pois$`temp_min_scale:infoff:year_offset`[i] <- model$coefficients[9]
-  par.est.pois$`temp_min_scale:infoff:year_offset_SD`[i] <- sqrt(diag(vcv)[9])
-  
-  print(i)
-
-
-comp.est <- matrix(NA, ncol = 16, nrow= 2) %>% 
-  as.data.frame()
-comp.est[1,] <- colMeans(par.est.pois) 
-comp.est[2,1] <- b1
-comp.est[2,3] <- b2
-comp.est[2,5] <- b3
-comp.est[2,7] <- b4
-comp.est[2,9] <- b5
-comp.est[2,11] <- b6
-comp.est[2,13] <- b7
-comp.est[2,15] <- b8
-colnames(comp.est) <- colnames(par.est.pois)#[c(TRUE, FALSE)]
-rownames(comp.est) <- c("estimated", "simulated")
-comp.est
-
-
 ## Simulate bird numbers with existing covariate data -------------------------------
+modres <- readRDS("~/Documents/HETH_model1_2yrs.rds")
 
 BIRDtab <- read_rds("C:/Users/bzr69/OneDrive - The Pennsylvania State University/Aug5_run_models_control/data/species/HETH.rds")
 BIRDtab <- read_rds("~/Documents/HETH.rds")
+
+# fixed
+b0 <- modres$summary.fixed$mean[1]
+b1 <- modres$summary.fixed$mean[2]        # year_offset
+b2 <- modres$summary.fixed$mean[3]        # infoff
+b3 <- modres$summary.fixed$mean[4]        # NewObserver
+b4 <- modres$summary.fixed$mean[5]        # temp_min_scale
+# add interaction
+b5 <- modres$summary.fixed$mean[6]        # year_offset:infoff  
+b6 <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
+b7 <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
+b8 <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
 
 offset <- 2
 
@@ -344,9 +58,9 @@ X2 <- X %>%
   Z2 <- model.matrix(~ 0 + as.character(X$Year))
   Z3 <- model.matrix(~ 0 + as.character(X$hexID))
   
-  g1 <- HETH$summary.random$ObserverRoute[,2]
-  g2 <- HETH$summary.random$Year[,2]
-  g3 <- HETH$summary.random$hexID[,1:2] %>% 
+  g1 <- modres$summary.random$ObserverRoute[,2]
+  g2 <- modres$summary.random$Year[,2]
+  g3 <- modres$summary.random$hexID[,1:2] %>% 
     as.tibble() %>% 
     filter(ID %in% X$hexID) %>% 
     select(mean) %>% 
@@ -362,49 +76,192 @@ X2 <- X %>%
   
   y <- rpois(length(lambda),lambda)
   
-  plot(y)
+  hist(y)
+  hist(BIRDtab$SpeciesTotal)
 
   X3 <- cbind(as.data.frame(X2), X$ObserverRoute, X$Year, X$hexID)
   colnames(X3)[9:11] <- c("ObserverRoute", "Year", "hexID")
   
-  m1 <- glm(y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-              X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-              X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset,
-            family = poisson(link = "log"))
-  
-  m1r <- glmer(y ~ X$year_offset + X$infoff + X$NewObserver + X$temp_min_scale + 
-                   X$year_offset * X$infoff + X$year_offset * X$temp_min_scale +
-                   X$temp_min_scale * X$infoff + X$temp_min_scale * X$infoff * X$year_offset +
-                   (1 | X$ObserverRoute) + 
-                   (1 | X$Year),
-                 family = poisson(link = "log"),
-                 start=list(fixef=coef(m1))
-                 #control=glmerControl(nAGQ0initStep=FALSE),
-                 #control = glmerControl(tolPwrss=1e-3),
-                 #verbose = 100
-                 )
   BIRDx <- cbind(y, X3)
   colnames(BIRDx)[1] <- "SpeciesTotal"
     
   formula1 <- SpeciesTotal ~ 1 + 
-  year_offset + 
-  infoff +
-  year_offset : infoff +
-  NewObserver +
-  temp_min_scale +
-  temp_min_scale : year_offset +
-  temp_min_scale : infoff +
-  temp_min_scale : infoff : year_offset +
-  f(ObserverRoute, model="iid") + 
-  f(Year, model="iid") +
-  f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
-  
-  hex.adj <- paste0("~/Documents/hexmap.graph")
+    year_offset + 
+    infoff +
+    year_offset : infoff +
+    NewObserver +
+    temp_min_scale +
+    temp_min_scale : year_offset +
+    temp_min_scale : infoff +
+    temp_min_scale : infoff : year_offset +
+    f(ObserverRoute, model="iid") + 
+    f(Year, model="iid") +
+    f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
     
+  hex.adj <- paste0("~/Documents/hexmap.graph")
+
   m1in <- inla(formula1, family="poisson", data=BIRDx, 
                control.predictor=list(compute=TRUE), 
                control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   
+  final <- cbind(c(b0, betas), modres$summary.fixed$`0.025quant`, modres$summary.fixed$`0.975quant`,
+                 m1in$summary.fixed$mean, m1in$summary.fixed$`0.025quant`, m1in$summary.fixed$`0.975quant`) 
+  final <- as.tibble(final)
+  colnames(final) <- c("esti","estiLO", "estiUP", "simu", "simuLO", "simuUP")
+  
+  ggplot(aes(x = esti, y = simu), data = final) +
+    geom_abline(intercept = 0, slope = 1, colour = "gray") +
+    geom_point(size = 2) +
+    theme_bw() +
+    geom_errorbar(aes(xmax = simuLO,
+                       xmin = simuUP),
+                   height = .1, size = 0.5) +
+    geom_errorbarh(aes(xmax = estiLO,
+                       xmin = estiUP),
+                   height = .1, size = 0.5,
+                   data = final[,1:3]) 
+    
+  reps <- 100
+  final2 <- as_tibble(matrix(NA, nrow = nrow(final), ncol = reps + 3))
+  final2[,1] <- modres$summary.fixed$mean
+  final2[,2] <- modres$summary.fixed$`0.025quant`
+  final2[,3] <- modres$summary.fixed$`0.975quant`
+  
+  for(i in 1:reps){
+    m1in <- inla(formula1, family="poisson", data=BIRDx, 
+                 control.predictor=list(compute=TRUE), 
+                 control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
+    
+    final2[,i+3] <- m1in$summary.fixed$mean
+    rm(m1in)
+    print(i)
+    
+  }
+  
+  final2 <- cbind(final2, c("b0", "b1", "b2", "b3", "b4", "b5", 
+                            "b6", "b7", "b8"))
+  colnames(final2)[reps+4] <- "coef"
+  
+  b0_si <- final2[1,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b0") %>% 
+    rename(coefval = `1`)
+  
+  b1_si <- final2[2,-(reps+4)] %>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b1") %>% 
+    rename(coefval = `2`)
+  
+  b2_si <- final2[3,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b2") %>% 
+    rename(coefval = `3`)
+  
+  b3_si <- final2[4,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b3") %>% 
+    rename(coefval = `4`)
+  
+  b4_si <- final2[5,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b4") %>% 
+    rename(coefval = `5`)
+  
+  b5_si <- final2[6,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b5") %>% 
+    rename(coefval = `6`)
+  
+  b6_si <- final2[7,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b6") %>% 
+    rename(coefval = `7`)
+  
+  b7_si <- final2[8,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b7") %>% 
+    rename(coefval = `8`)
+  
+  b8_si <- final2[9,-(reps+4)]%>% 
+    t() %>% 
+    as_tibble() %>% 
+    mutate(coe = "b8") %>% 
+    rename(coefval = `9`)
+  
+  bs_si <- rbind(b0_si, b1_si, b2_si, b3_si, b4_si,
+                 b5_si, b6_si, b7_si, b8_si)
+  
+  betas2 <- c(b0, betas) %>% 
+    as_tibble
+  coef_vec <- as.vector(final2$coef)
+  betas2 <- cbind(betas2, coef_vec)
+  colnames(betas2)[2] <- "coef"
+  
+  final_props <- as_tibble(matrix(NA, nrow = 9, ncol = reps))
+  
+  for(k in 1:nrow(final_props)){
+    for(l in 1:ncol(final_props)){
+      
+      if(is.na(final2[k,l + 3])) {final_props[k,l] <- 0} else {
+        
+        if(between(final2[k,l + 3], final2[k,2], final2[k,3]) ) {
+          final_props[k,l] <- 1} else {final_props[k,l] <- 0}
+      }
+    }
+  }
+  
+  final_props2 <- rep(NA, nrow(betas2))
+  
+  for(m in 1:nrow(betas2)) {
+     final_props2[m] <- (sum(final_props[m,]))/reps
+  }
+  
+  coeflabs <- c(glue("intercept\n{final_props2[1]}"),
+                glue("year_offset\n{final_props2[2]}"),
+                glue("infoff\n{final_props2[3]}"),
+                glue("NewObserver\n{final_props2[4]}"),
+                glue("temp_min\n{final_props2[5]}"),
+                glue("year_offset\ninfoff\n{final_props2[6]}"),
+                glue("year_offset\ntemp_min\n{final_props2[7]}"),
+                glue("infoff\ntemp_min\n{final_props2[8]}"),
+                glue("year_offset\ninfoff\ntemp_min\n{final_props2[9]}"))
+  
+  ggplot() +
+    geom_linerange(data = final2, 
+                   mapping = aes(x = coef,
+                                 ymin = V2, ymax = V3,
+                                 lwd = 6),
+                   color = "grey", alpha = 0.7) +
+    scale_y_continuous(limits=c(min(final2[,-(reps+4)]),
+                                max(final2[,-(reps+4)]))) +
+    geom_crossbar(data = final2, 
+                  aes(ymin = V1 , ymax = V1,
+                      x = coef, y = V1),
+                  size = 0.1, col="black", width = .5) +
+    geom_crossbar(data = betas2, 
+                  aes(ymin = value , ymax = value,
+                      x = coef, y = value),
+                  size = 0.1, col="red", width = .5, linetype = "dotted") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position="none",
+          axis.title.x=element_blank()) +
+    ggtitle("Simulation Coefficient Overlap") +
+    geom_point(data = bs_si,
+               aes(x = coe,
+                   y = coefval),
+               size = 0.75) +
+    scale_x_discrete(labels= coeflabs)
+  
+# plotar no topo quantos de quantos cairam dentro do intervalo de confianca
   
   
   
@@ -414,59 +271,5 @@ X2 <- X %>%
   
   
   
+## remove set seed and run this 1000 times? which species, best models? different models?
   
-  
-  
-  
-  
-  
-set.seed(321) 
-
-sim_arguments <- list(
-  formula = y ~ 1 + year_offset + infoff + NewObserver + temp_min_scale + 
-    year_offset * infoff + year_offset * temp_min_scale +
-    temp_min_scale * infoff + temp_min_scale * infoff * year_offset +
-    (1 | ObserverRoute) + 
-    (1 | Year),
-  reg_weights = c(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11),
-  fixed = list(year_offset = X$year_offset,
-               infoff = X$infoff,
-               NewObserver = X$NewObserver,
-               temp_min_scale = X$temp_min_scale
-               ),
-  randomeffect = list(ObserverRoute = X$ObserverRoute,
-                      Year = X$Year),
-  sample_size = nrow(X)
-)
-
-nested_data <- sim_arguments %>%
-  simulate_fixed(data = X, .) %>%  
-  simulate_randomeffect(sim_arguments) %>%
-  simulate_error(sim_arguments) %>%
-  generate_response(sim_arguments)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
