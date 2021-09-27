@@ -3,6 +3,8 @@
 library(tidyverse)
 library(glue)
 library(gridExtra)
+#library(grid)
+#library(RColorBrewer)
 
 COEFMAT_PATH <- glue("data/coef_species.csv")
 INTERCEPT_PATH <- glue("data/intercepts.csv")
@@ -324,7 +326,7 @@ prop_tabX
 import_pre <- function(xxx){
   read_csv(as.character(xxx)) %>% 
     filter(year == 20) %>% 
-    select(prediction, HWA) %>% 
+    dplyr::select(prediction, HWA) %>% 
     arrange(HWA) %>% 
     pull(prediction) %>% 
     t() %>% 
@@ -333,10 +335,10 @@ import_pre <- function(xxx){
     mutate(ratio = inf / not)
 }
 
-per1 <- sort(rep(c("BHVI","BLBW","BTNW","HETH","MAWA","OVEN","RBNU","ACFL",
-                   "EAPH","WBNU","CERW","WOTH","SCTA","BLJA","BCCH","WEWA"),3))
-per15 <- c(rep("Hemlock Species", 24),
-           rep("Control Species", 24))
+per1 <- rep(c("BHVI","BLBW","BTNW","HETH","MAWA","OVEN","RBNU","ACFL",
+              "EAPH","WBNU","CERW","WOTH","SCTA","BLJA","BCCH","WEWA"), each = 3)
+per15 <- c(rep("Hemlock species", 24),
+           rep("Control species", 24))
 per2 <- rep(c("t1", "t2", "t3"))
 pers <- as_tibble(cbind(per1, per15, per2)) %>% 
   rename(sps = per1, temp = per2) %>% 
@@ -357,40 +359,65 @@ pers <- pers %>%
          neg = piz_minus + 100)
 
 pers2 <- pers %>% 
-  select(sps, per15, temp, not, infes, ratio) %>% 
-  pivot_longer(`not`:`infes`, names_to = "Infes_sta", values_to = "pop20")
+  dplyr::select(sps, per15, temp, not, infes, ratio) %>% 
+  pivot_longer(`not`:`infes`, names_to = "infes_sta", values_to = "pop20")
+pers2$infes_sta <- factor(pers2$infes_sta, levels = c("not","infes")) ## changes order in plot
 
-ggplot(data = pers2, aes(x = sps, y = ratio, fill = temp)) +
-  geom_bar(position="dodge", stat='identity')
+pers2h <- pers2 %>% 
+  filter(per15 == "Hemlock species") %>% 
+  filter(!(sps == "OVEN"))
+
+pers2c <- pers2 %>% 
+  filter(per15 == "Control species")
+
+make_gradient <- function(deg = 45, n = 100, cols = blues9) {
+  cols <- colorRampPalette(cols)(n + 1)
+  rad <- deg / (180 / pi)
+  mat <- matrix(data = rep(seq(0, 1, length.out = n) * cos(rad), n), 
+                byrow = TRUE, ncol = n) +
+         matrix(data = rep(seq(0, 1, length.out = n) * sin(rad), n),
+                byrow = FALSE, ncol = n)
+  mat <- mat - min(mat)
+  mat <- mat / max(mat)
+  mat <- 1 + mat * n
+  mat <- matrix(data = cols[round(mat)], ncol = n)
   
+  grid::rasterGrob(image = 
+                     #scales::alpha(
+                       mat, 
+                      # 0.9), 
+                   width = unit(1, "npc"),
+                   height = unit(1,"npc"),
+                   interpolate = TRUE)
+}
+#  grid::rasterGrob(
+#     image = mat,
+#     width = unit(1, "npc"),
+#     height = unit(1, "npc"),
+#     interpolate = TRUE
+#  )
+#}
 
-# library
-library(likert) 
+g <- make_gradient(
+  deg = 180, n = 500, cols = brewer.pal(9, "Spectral")
+)
 
-# Use a provided dataset
-data(pisaitems) 
-items28 <- pisaitems[, substr(names(pisaitems), 1, 5) == "ST24Q"] 
+tempcols <- rep(c("blue", "blue","yellow", "yellow", "firebrick4", "firebrick4"),8)
 
-# Build plot
-p <- likert(items28) 
-plot(p)
-
-
-
-
-
-
+ggplot(data = pers2c, aes(x = temp, y = pop20, fill = infes_sta)) +
+#  annotation_custom(
+#    grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) + 
+  geom_bar(position="dodge", stat='identity') +
+  facet_wrap(~sps,ncol = 8) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) 
 
 
-
-
-
-
-
-
-
-
-
+ggplot(data = pers2h, aes(x = temp, y = pop20, fill = infes_sta)) +
+  geom_bar(position="dodge", stat='identity') +
+  facet_wrap(~sps,ncol = 8) +
+  theme_bw() 
 
 
 
