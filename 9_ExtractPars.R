@@ -9,6 +9,7 @@ library(tidyselect)
 spsr <- "RBNU"
 
 source("7_extract_fixed_pars.R")
+#  source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 
 summary_results <- readRDS(glue('data/models_res/{spsr}/summary_results.rds'))
 
