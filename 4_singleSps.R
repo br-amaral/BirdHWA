@@ -55,11 +55,15 @@ single_sps <- function(species){
   BIRD2 <- rbind(BIRD2a, BIRD2b) %>% 
     arrange(RouteId, Year)
   
+  BIRD2uni <- BIRD2 %>% 
+    select(RouteId, minTemp, meanTemp) %>% 
+    distinct()
+  
   ## standardize temperature  -----------------
   # mean by species, sd for all data (calculated in combineData.R)
   BIRD3 <- BIRD2 %>% 
-    mutate(min_tempMe = mean(BIRD2$minTemp),
-           mean_tempMe = mean(BIRD2$meanTemp),
+    mutate(min_tempMe = mean(BIRD2uni$minTemp),
+           mean_tempMe = mean(BIRD2uni$meanTemp),
            temp_min_scale = (minTemp - min_tempMe)/sd_tempMi,
            temp_mean_scale = (meanTemp - mean_tempMe)/sd_tempMe)
  

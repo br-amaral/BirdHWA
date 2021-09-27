@@ -22,42 +22,24 @@ hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 
 offsets <- seq(2,16,1)
 
-run_model <- function(off, BIRDx, formula){
-
-## Create an year offset for that species ------------------  
- # BIRDx <- BIRDx %>% 
-   BIRDx <- BIRDtab %>% 
-    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
+run_model <- function(offset, BIRDx, formula){
+   ## Create an year offset for that species ------------------  
+  BIRDx <- BIRDx %>%  
+    # remove 20 ears before and after infestation
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
+    filter(year_offset > -20 & year_offset < 20) %>% 
+    # Only routes infested for at least 10 years
+    group_by(RouteId) %>% 
+    mutate(max = max(year_offset)) %>%  
+    filter(max > 9) %>% 
+    ungroup() %>% 
+    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
-  
-  rout_notinf <- BIRDx %>% 
-    select(RouteId, Year, YearInfested, Infested) %>% 
-    filter(YearInfested == 0) %>% 
-    distinct() %>% 
-    group_by(RouteId) %>% 
-    mutate(maxYear = max(Year)) %>% 
-    select(RouteId, maxYear) %>% 
-    distinct()
-  
-  ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-  for(i in 1:nrow(BIRDx)){
-    if(BIRDx$YearInfested[i] == 0){
-      off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin)
-    }
-  }
-  ## only infested routes
-  BIRDx2 <- BIRDx %>% 
-    filter(YearInfested != 0,
-           year_offset > -20 & year_offset < 20) %>% 
-    group_by(RouteId) %>% 
-    mutate(max = max(year_offset)) %>% 
-    ungroup() %>% 
-    filter(max > 9)
-    
-  
+  print(nrow(BIRDx))
+  print(sum(BIRDx$SpeciesTotal))
+
   model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
                 control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
@@ -75,7 +57,7 @@ run_combinations <- function(species){
       name <- glue("{species}_model{i}_{off}yrs")
       assign(name,resu)
       print(name)
-      name2 <- glue("data/models_res/{species}/{name}no9.rds", sep= "")
+      name2 <- glue("data/models_res/{species}/{name}.rds", sep= "")
       dir.create(glue("data/models_res/{species}"))
       saveRDS(object = get(name), file = name2)
       rm(resu)
@@ -83,9 +65,6 @@ run_combinations <- function(species){
     }
   }
 }
-
-run_combinations("BHVI")
-
 
 lapply(sps_list$SpeciesCode, run_combinations)
 

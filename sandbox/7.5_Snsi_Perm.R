@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-species <- "BHVI"
+species <- "ACFL"
 offsets <- 2
 mod <- 1
 
@@ -26,13 +26,12 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
-
 create_data_sensi <- function(offset2, BIRDx) {
   off <- offset2
   ## Create an year offset for that species ------------------  
   BIRDx <- BIRDx %>% 
     # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off, 0),
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - off, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
   
@@ -71,8 +70,8 @@ create_data_sensi <- function(offset2, BIRDx) {
   return(BIRDx2_1)
 }
 
-create_data_perm <- function(offset2, BIRDin, perms) {
-  off <- offset2
+create_data_perm <- function(offset, BIRDin, perms) {
+  off <- offset
   
   inf_range <- BIRDin %>% 
     filter(Infested == T) %>% 
@@ -89,10 +88,10 @@ create_data_perm <- function(offset2, BIRDin, perms) {
       group_by(RouteId) %>% 
       mutate(YearInfested = 
                ifelse(YearInfested != 0, 
-                      ceiling(runif(1, min(Year), max(Year))),
-                      YearInfested)) %>% 
+                      Year - YearInfested - offset + ceiling(runif(1, min(Year), max(Year))),
+                      year_offset)) %>% 
       ungroup() %>% 
-      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off, 0),
+      mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested - offset, year_offset),
              # infoff: 'infested' route according to the delay in the effect (offset)
              infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)),
              Infested = ifelse(YearInfested >= Year, 1, 0))
@@ -140,7 +139,6 @@ run_model <- function(BIRDx_sub, formula) {
   return(model)
 }
 
-
 run_sensi <- function(species, offsets) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
@@ -161,34 +159,34 @@ run_sensi <- function(species, offsets) {
     dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
-    rm(BIRDtab3)
+    rm(BIRDtab)
   }
 }
 
-run_perm <- function(species, perm, offsets) {
-  off <- offsets
-  perms <- perm
+run_perm <- function(species) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
+  BIRDtab2 <- create_data_sensi(offsets, BIRDtab)
   
-  for(i in 1:perms){
+  
+  for(i in 1:nrow(routes)){
     
-    BIRDtab2 <- create_data_perm(off, BIRDtab, perms)
+    BIRDtab3 <- BIRDtab2[which(BIRDtab2$RouteId != as.character(routes[i,1])),]
     
-    resu <- run_model(BIRDtab2, formula)
-    name <- glue("{species}_model_{off}yrs_perm{i}")
+    resu <- run_model(off, BIRDtab3, formula)
+    name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
-    name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
-    #dir.create(glue("data/models_res/{species}"))
-    if (i == 1) {dir.create(glue("data/models_res/{species}/perm"))}
+    name2 <- glue("data/models_res/{species}/sensi/{name}_{routes[i,1]}.rds", sep= "")
+    dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
-    rm(BIRDtab2)
-    rm(name)
+    rm(BIRDtab)
   }
 }
 
+run_sensi(species, offsets)
 
-run_sensi(species = species, offsets = 1)
-run_perm(species = species, perm = 10, offsets = 1)
+
+lapply(species, run_sensi)
+lapply(species, run_perm)
