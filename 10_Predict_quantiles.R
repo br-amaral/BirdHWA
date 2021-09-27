@@ -12,7 +12,7 @@ create_pred_off <- function(offset_v){
 }
 
 species <- spsr
-offset <- year_ <- 8
+offset <- year_ 
 
 SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
 BIRDtab <- readRDS(SPECIES_MOD_DAT)
@@ -79,10 +79,16 @@ ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
         axis.text = element_text(size= 12),
         axis.title = element_text(size = 12),
         legend.position = "none",
-        axis.title.y = element_text(margin = margin(t = 0, r = 5, b = 0, l = 0)),
-        axis.title.x = element_text(margin = margin(t = 5, r = 0, b = 0, l = 0))) + 
+        #axis.title.y = element_text(margin = margin(t = 0, r = 5, b = 0, l = 0)),
+        #axis.title.x = element_text(margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black")) + 
   xlab("Mean minimum temperature") +
-  ylab("Frequency") 
+  ylab("Frequency") +
+  scale_y_continuous(limits = c(0,0.2))
 
 predict.inla2 <- function(species, modelN, temp, max) {
   my_tibble2 <- my_tibble %>% 
