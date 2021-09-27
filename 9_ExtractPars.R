@@ -5,15 +5,13 @@ library(INLA)
 library(tidyselect)
 
 ### choose species here! species list is: 
-###  BHVI BLBW BTNW HETH MAWA RBNU ACFL  
-spsr <- "ACFL"
+###  BHVI BLBW BTNW HETH MAWA OVEN RBNU ACFL  
+spsr <- "RBNU"
 
 source("7_extract_fixed_pars.R")
+#  source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 
-summary_results <- readRDS("data/models_res/summary_results.rds") %>% 
-  filter(species == spsr)
-# summary_results <- readRDS(glue('{spsr}_summares_2.RDS'))
-# summary_results <- summary_results[1:15,]
+summary_results <- readRDS(glue('data/models_res/{spsr}/summary_results.rds'))
 
 summary_results2 <- summary_results %>%
   mutate(waic_list = map(result, "waic")) %>%
@@ -62,10 +60,8 @@ pars_models <- as_tibble(rbind(pars_models_FUNC(1),
 
 (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
 
-if(nrow(waic_best) != 1) {stop("\n\n\n\n two models tied as the best according to WAIC - pick one \n\n\n\n")}
-
-year_ <- waic_best$year
-mod_ <- waic_best$model
+year_ <- waic_best$year[1]
+mod_ <- waic_best$model[1]
 nacol <- c("mean", "low", "up","par")
 par_tib <- pars_models %>% 
   filter(model == mod_,
@@ -86,7 +82,7 @@ par_tib <- pars_models %>%
 
 # waic plot   ---------------------
 ggplot(aes(year, 
-           jitter(waic, amount = 0.5),
+           #jitter(waic, amount = 0.5),
            waic,
            group=model, color=factor(model)), data = summary_results2) +
   geom_line(alpha=0.5) +
@@ -133,13 +129,3 @@ colnames(summary_results2[11:19])
 plot_var(summary_results2, "infoff")
 plot_var(summary_results2, "year_offset_infoff")
 plot_var(summary_results2, "year_offset_infoff_temp_min_scale")
-
-SUM_NAME <- glue("data/models_res/{species}/{species}_bestmodres.rds")
-BEST_MOD <- glue("data/models_res/{species}/{species}_bestmod.rds")
-BEST_OFF <- glue("data/models_res/{species}/{species}_bestoff.rds")
-PARS_RES <- glue("data/models_res/{species}/{species}_partib.rds")
-
-write_rds(summary_results2, file = SUM_NAME)
-write_rds(mod_, file = BEST_MOD)
-write_rds(year_, file = BEST_OFF)
-write_rds(par_tib, file = PARS_RES)
