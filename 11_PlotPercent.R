@@ -68,6 +68,49 @@ a <-
         axis.title.y=element_blank()) +
   ggtitle("Model (symbol) and year (cross)")
 
+order2 <- c(17,16,15,14,13,12,18,8,6,9,4,7,10,11,5) - 3
+pmat2 <- pmat %>% 
+  filter(species != "OVEN")
+a1 <- ggplot(data = pmat2, aes(x= model, y= reorder(species, order2),
+                        shape = factor(treat_cont),
+                        size =  0.8),
+             colour = "black",) +
+  geom_point(size = 2) +
+  theme_bw() +
+  scale_y_discrete(limits = rev(levels(pmat2$species))) +
+  scale_x_continuous(breaks = seq(1,11,1),
+                     limits = c(1,11)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position="none",
+        axis.title.y=element_blank(),
+        #panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  ggtitle("Best model according to WAIC") +
+  xlab("Model")
+
+a2 <- ggplot(data = pmat2, aes(x= year, y= reorder(species, order2),
+                               shape = factor(treat_cont),
+                               size =  0.8),
+             colour = "black",) +
+  geom_point(size = 2) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(2,16,1),
+                     limits = c(2,16)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position="none",
+        axis.title.y=element_blank(),
+        axis.text.y = element_blank(),
+        #panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.y = element_blank()) +
+  ggtitle("Delay in response to infestation") +
+  xlab("Year")
+
+a1
+a2
+
+grid.arrange(a1, a2, ncol = 2)
+
 ## coeficients
 
 ## infoff ---------------------------
@@ -406,7 +449,7 @@ g <- make_gradient(
 tempcols <- rep(c("blue", "blue","yellow", "yellow", "firebrick4", "firebrick4"),8)
 
 p1 <- 
-  ggplot(data = pers2c, aes(x = temp, y = sqrt(pop20), fill = infes_sta)) +
+  ggplot(data = pers2c, aes(x = temp, y = pop20, fill = infes_sta)) +
     #  annotation_custom(
     #    grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) + 
     geom_bar(position="dodge", stat='identity') +
@@ -415,18 +458,19 @@ p1 <-
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           legend.position = "none",
-          axis.title.x = element_text(margin = margin(t = 7))) +
-    xlab("Temperature Quantile") + 
-    ylab("(Abundance)^2") +
+          #axis.title.x = element_text(margin = margin(t = 7)),
+          axis.title.x = element_blank()) +
+    #xlab("Temperature Quantile") + 
+    #ylab("Abundance") +
     scale_x_discrete(labels=c("t1" = "0.2",
                               "t2" = "0.5",
                               "t3" = "0.8")) +
     scale_fill_manual("legend",
-                      values = c("not" = "darkolivegreen3", "infes" = "plum3"),
+                      values = c("not" = "gray28", "infes" = "gray82"),
                       labels = c("Not infested", "Infested"))
 
 p2 <- 
-  ggplot(data = pers2h, aes(x = temp, y = sqrt(pop20), fill = infes_sta)) +
+  ggplot(data = pers2h, aes(x = temp, y = pop20, fill = infes_sta)) +
     geom_bar(position="dodge", stat='identity') +
     facet_wrap(~sps,ncol = 8) +
     theme_bw() +
@@ -438,20 +482,113 @@ p2 <-
           legend.margin=margin(0,0,0,0),
           legend.box.margin=margin(-5,0,-5,-7),
           axis.title.x = element_blank()) +
-    ylab("(Abundance)^2") +
+    #ylab("Abundance") +
     scale_x_discrete(labels=c("t1" = "0.2",
                               "t2" = "0.5",
                               "t3" = "0.8")) +
     scale_fill_manual("legend",
-                      values = c("not" = "darkolivegreen3", "infes" = "plum3"),
+                      values = c("not" = "gray28", "infes" = "gray82"),
                       labels = c("Not infested", "Infested"))
 p1
 
 p2
 
-grid.arrange(p1, p2)
+grid.arrange(p2, p1)
 
-ggarrange(p1, p2, 
-          ncol = 1, nrow = 2,
-          heights = c(6,6), widths = c(10,10))
+
+## build p plots in a different way!
+pers2h$pop201 <- pers2h$pop202 <- pers2c$pop202 <- pers2c$pop202 <- NA
+
+for(i in 1:nrow(pers2c)){
+  if(pers2c$infes_sta[i] == "not") {
+    pers2c$pop201[i] <- 1
+  }
+  if(pers2c$infes_sta[i] == "infes") {
+    pers2c$pop201[i] <- (pers2c$pop20[i]/pers2c$pop20[i-1])
+    pers2c$pop202[i] <- log(pers2c$pop201[i])
+  }
+}
+  
+for(i in 1:nrow(pers2h)){
+  if(pers2h$infes_sta[i] == "not") {
+    pers2h$pop201[i] <- 1
+  }
+  if(pers2h$infes_sta[i] == "infes") {
+    pers2h$pop201[i] <- (pers2h$pop20[i]/pers2h$pop20[i-1])
+    pers2h$pop202[i] <- log(pers2h$pop201[i])
+  }
+}
+
+pers2h_n <- pers2h %>% 
+  filter(infes_sta == "infes") %>% 
+  distinct(round(ratio,3), .keep_all = TRUE) %>% 
+  select(-`round(ratio, 3)`)
+pers2h_n <- pers2h_n[order(nrow(pers2h_n):1),]
+pers2h_n$nums <- c(rep(2:6, each = 3), 7, 1, 1, 1)
+pers2h_n$sps <- factor(pers2h_n$sps, levels = rev(unique(pers2h_n$sps[order(pers2h_n$nums)])))
+
+pers2c_n <- pers2c %>% 
+  filter(infes_sta == "infes") %>% 
+  distinct(round(ratio,3), .keep_all = TRUE) %>% 
+  select(-`round(ratio, 3)`)
+pers2c_n$nums <- c(4,4,4,6,6,6,3,3,3,8,8,8,5,2,2,2,1,1,1,7)
+pers2c_n$sps <- factor(pers2c_n$sps, levels = rev(unique(pers2c_n$sps[order(pers2c_n$nums)])))
+
+pers2c_n <- pers2c_n[with(pers2c_n, order(-nums)),]
+
+pl1 <- ggplot(data = pers2h_n, aes(y = sps, x = pop202)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  geom_point(aes(shape = temp, color = temp), size = 2) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5) +
+  scale_x_continuous(breaks = seq(-3, 1, 0.5),
+                     limits = c(-3, 1, 0.5)) +
+  scale_color_manual(values = c("t1" = "blue4",
+                                "t2" = "violetred",
+                                "t3" = "darkorange3"),
+                    labels = c("t1" = "0.2",
+                               "t2" = "0.5",
+                               "t3" = "0.8"),
+                    name = "Temperature\nQuantiles") 
+
+pl2 <- ggplot(data = pers2c_n, aes(y= sps, x = pop202)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  geom_point(aes(shape = temp, color = temp), size = 2) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5) +
+  scale_x_continuous(breaks = seq(-3, 1, 0.5),
+                     limits = c(-3, 1, 0.5)) +
+  scale_color_manual(values = c("t1" = "blue4",
+                                "t2" = "violetred",
+                                "t3" = "darkorange3"),
+                     labels = c("t1" = "0.2",
+                                "t2" = "0.5",
+                                "t3" = "0.8"),
+                     name = "Temperature\nQuantiles")
+grid.arrange(pl1, pl2)
+
 
