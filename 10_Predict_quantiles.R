@@ -1,6 +1,14 @@
+species <- spsr <- 'RBNU'
+SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
 
 # Make predictions with the fixed values and temperature quantiles
-my_tibble <- summary_results2
+summary_results2 <- read_rds(SUM_RES_PATH)
+
+(waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
+
+year_ <- waic_best$year[1]
+mod_ <- waic_best$model[1]
+
 pred_tab <- as_tibble(seq(-10,20,1)) %>% 
   rename(year = value)
 
@@ -11,7 +19,6 @@ create_pred_off <- function(offset_v){
   return(pred_tabX)
 }
 
-species <- spsr
 offset <- year_ 
 
 SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
@@ -125,7 +132,7 @@ predict.inla2 <- function(species, modelN, temp, max) {
   pred_tab_name <- glue("pred_tab{year_}")
   
   plot.pred(off = year_, pars_tib = my_tibble2, pred_tabX = get(pred_tab_name), temp = temp, max = max)
- 
+  
 }
 
 plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
@@ -218,7 +225,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   plot_preds <- plot_preds %>% 
     filter(!(HWA == 'no_infest' & year_off_t < 0)) %>% 
     arrange(desc(HWA)) 
-    
+  
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_vline(xintercept = 0, size=1, color = "darkgray") +
     geom_vline(xintercept = off, linetype="dotted", color = "black", size=1) +
@@ -248,9 +255,11 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
 
 maxi <- 10
 
-predict.inla2(spsr, mod_, t1, maxi)
-predict.inla2(spsr, mod_, t2, maxi)
-predict.inla2(spsr, mod_, t3, maxi)
+a <- predict.inla2(spsr, mod_, t1, maxi)
+b <- predict.inla2(spsr, mod_, t2, maxi)
+c <- predict.inla2(spsr, mod_, t3, maxi)
+
+grid.arrange(a, b, c, ncol = 1)
 
 unique(BIRDtab$min_tempMe)/100
 unique(BIRDtab$sd_tempMi)/100
