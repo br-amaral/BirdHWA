@@ -1,8 +1,8 @@
-species <- spsr <- 'RBNU'
+#species <- spsr <- 'RBNU'
 SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
 
 # Make predictions with the fixed values and temperature quantiles
-summary_results2 <- read_rds(SUM_RES_PATH)
+summary_results2 <- my_tibble <- read_rds(SUM_RES_PATH)
 
 (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
 
@@ -227,39 +227,45 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
     arrange(desc(HWA)) 
   
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
-    geom_vline(xintercept = 0, size=1, color = "darkgray") +
-    geom_vline(xintercept = off, linetype="dotted", color = "black", size=1) +
-    geom_line() +
-    #geom_line(aes(x = year, y = prediction), data = off_gap,
-    #          col = 'white', size=2, alpha=1) + 
-    geom_point(size = 2) + 
+    geom_line(size = 0.8) + 
+    geom_line(aes(x = year, y = prediction), data = off_gap,
+              col = 'white', size=2, alpha=1) +
+    geom_vline(xintercept = 0, size=0.8, color = "gray43") +
+    geom_vline(xintercept = off, linetype="dotted", color = "gray43", size=0.8) +
+    geom_point(size = 1.5) + 
     theme_bw() +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.text = element_text(size= 16),
-          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
-          axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)),
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 16),
+          #axis.text = element_text(size= 16),
+          #axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
+          #axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)),
+          #legend.title = element_text(size = 18),
+          #legend.text = element_text(size = 16),
           legend.position = "none",
-          axis.title = element_text(size = 16)) + 
-    xlab("Years since HWA infestation") +
-    ylab("Bird Abundance") +
+          #axis.title = element_text(size = 16)
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank()) + 
+    #xlab("Years since HWA infestation") +
+    #ylab("Bird Abundance") +
     scale_x_continuous(breaks = c(-10,-5,0,5,10,15,20)) +
-    ylim(0, max)
+    ylim(0, max) +
+    scale_colour_manual("legend",
+                      values = c("no_infest" = "gray82", "infest" = "gray28"),
+                      labels = c("Not infested", "Infested"))
   # confidence interval
   #geom_line(aes(x = year, y = predictionL, col = HWA), data = plot_preds) +
   #geom_line(aes(x = year, y = predictionU, col = HWA), data = plot_preds)
   
 }
 
-maxi <- 10
+#maxi <- 0.5
 
 a <- predict.inla2(spsr, mod_, t1, maxi)
 b <- predict.inla2(spsr, mod_, t2, maxi)
 c <- predict.inla2(spsr, mod_, t3, maxi)
 
-grid.arrange(a, b, c, ncol = 1)
+grid.arrange(a, b, c, ncol = 3)
+print(species)
 
 unique(BIRDtab$min_tempMe)/100
 unique(BIRDtab$sd_tempMi)/100
