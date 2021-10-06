@@ -1,3 +1,7 @@
+library(tidyverse)
+library(gridExtra)
+library(glue)
+
 #species <- spsr <- 'RBNU'
 SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
 
@@ -64,8 +68,8 @@ mean(BIRDx2NO$temp_min_scale)
 #hist(BIRDx2NO$temp_min_scale)
 
 temps <- rbind(
-  BIRDx2INF %>% select(temp_min_scale, Infested),
-  BIRDx2NO %>% select(temp_min_scale, Infested)
+  BIRDx2INF %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested),
+  BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested)
 )
 
 t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1]
@@ -258,7 +262,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
-#maxi <- 0.5
+maxi <- 0.5
 
 a <- predict.inla2(spsr, mod_, t1, maxi)
 b <- predict.inla2(spsr, mod_, t2, maxi)
