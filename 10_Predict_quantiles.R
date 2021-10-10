@@ -72,9 +72,9 @@ temps <- rbind(
   BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested)
 )
 
-t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1]
-t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2]
-t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3]
+(t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1])
+(t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2])
+(t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3])
 
 ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
   geom_histogram(aes(y = stat(count)/length(temps$temp_min_scale)),
@@ -232,8 +232,8 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_line(size = 0.8) + 
-    geom_line(aes(x = year, y = prediction), data = off_gap,
-              col = 'white', size=2, alpha=1) +
+    #geom_line(aes(x = year, y = prediction), data = off_gap,
+    #          col = 'white', size=2, alpha=1) +
     geom_vline(xintercept = 0, size=0.8, color = "gray43") +
     geom_vline(xintercept = off, linetype="dotted", color = "gray43", size=0.8) +
     geom_point(size = 1.5) + 
@@ -262,7 +262,8 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
-maxi <- 0.5
+
+# maxi <- 0.5
 
 a <- predict.inla2(spsr, mod_, t1, maxi)
 b <- predict.inla2(spsr, mod_, t2, maxi)
