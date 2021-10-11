@@ -113,6 +113,16 @@ formula7 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
 
+formula11 <- SpeciesTotal ~ 1 + 
+  year_offset + 
+  NewObserver +
+  temp_min_scale +
+  temp_min_scale : year_offset +
+  f(ObserverRoute, model="iid") + 
+  f(Year, model="iid") +
+  f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
+
+
 formulas <- list(formula1,formula2,formula3,formula4,
                  formula6,formula6,formula7,formula8,
-                 formula9,formula10)
+                 formula9,formula10, formula11)
