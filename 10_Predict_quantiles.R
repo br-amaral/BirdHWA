@@ -2,7 +2,7 @@ library(tidyverse)
 library(gridExtra)
 library(glue)
 
-#species <- spsr <- 'RBNU'
+# species <- spsr <- 'REVI'
 SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
 
 # Make predictions with the fixed values and temperature quantiles
@@ -230,6 +230,8 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
     filter(!(HWA == 'no_infest' & year_off_t < 0)) %>% 
     arrange(desc(HWA)) 
   
+  write_csv(plot_preds, file = glue("data/{sps}_{temp}preds.csv"))
+  
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_line(size = 0.8) + 
     #geom_line(aes(x = year, y = prediction), data = off_gap,
@@ -263,7 +265,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
 }
 
 
-# maxi <- 0.5
+# maxi <- 32
 
 a <- predict.inla2(spsr, mod_, t1, maxi)
 b <- predict.inla2(spsr, mod_, t2, maxi)
