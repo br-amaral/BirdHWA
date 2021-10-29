@@ -68,9 +68,12 @@ a <-
         axis.title.y=element_blank()) +
   ggtitle("Model (symbol) and year (cross)")
 
-order2 <- c(17,16,15,14,13,12,18,8,6,9,4,7,10,11,5) - 3
+order2 <- c(14, 13, 12, 11, 10, 9, 15,# "BHVI" "BLBW" "BTNW" "HETH" "MAWA" "OVEN" "RBNU" "ACFL"
+            6, 3, 7, 1, 4, 8, 5, 2)   # "EAPH" "WBNU" "CERW" "WOTH" "SCTA" "BLJA" "REVI" "WEWA"
+
 pmat2 <- pmat %>% 
-  filter(species != "OVEN")
+  filter(species != "OVEN",
+         species != "BCCH")
 a1 <- ggplot(data = pmat2, aes(x= model, y= reorder(species, order2),
                         shape = factor(treat_cont),
                         size =  0.8),
@@ -380,7 +383,7 @@ import_pre <- function(xxx){
 }
 
 per1 <- rep(c("BHVI","BLBW","BTNW","HETH","MAWA","OVEN","RBNU","ACFL",
-              "EAPH","WBNU","CERW","WOTH","SCTA","BLJA","BCCH","WEWA"), each = 3)
+              "EAPH","WBNU","CERW","WOTH","SCTA","BLJA","REVI","WEWA"), each = 3)
 per15 <- c(rep("Hemlock species", 24),
            rep("Control species", 24))
 per2 <- rep(c("t1", "t2", "t3"))

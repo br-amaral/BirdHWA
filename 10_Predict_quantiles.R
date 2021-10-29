@@ -2,7 +2,7 @@ library(tidyverse)
 library(gridExtra)
 library(glue)
 
-# species <- spsr <- 'REVI'
+# species <- spsr <- 'BTNW'
 SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
 
 # Make predictions with the fixed values and temperature quantiles
@@ -49,7 +49,7 @@ ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
   theme_bw()
 
 ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
-  #   geom_point() +
+  #  geom_point() +
   geom_smooth() +
   ggtitle(species) + xlim(-20,20) 
 
@@ -230,7 +230,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
     filter(!(HWA == 'no_infest' & year_off_t < 0)) %>% 
     arrange(desc(HWA)) 
   
-  write_csv(plot_preds, file = glue("data/{sps}_{temp}preds.csv"))
+  write_csv(plot_preds, file = glue("data/{spsr}_{temp}preds.csv"))
   
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_line(size = 0.8) + 
