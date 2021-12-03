@@ -135,7 +135,6 @@ run_sensi <- function(species, offsets) {
            low = as.numeric(low),
            up = as.numeric(up))
   
-    
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   
