@@ -26,49 +26,23 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
-
 create_data_sensi <- function(offset2, BIRDx) {
-  off <- offset2
   ## Create an year offset for that species ------------------  
-  BIRDx <- BIRDx %>% 
-    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact)
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + off, 0),
+  BIRDx2 <- BIRDx %>%  
+    # remove 20 ears before and after infestation
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
+    filter(year_offset > -20 & year_offset < 20) %>% 
+    # Only routes infested for at least 10 years
+    group_by(RouteId) %>% 
+    mutate(max = max(year_offset)) %>%  
+    filter(max > 9) %>% 
+    ungroup() %>% 
+    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset2, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
-           infoff = ifelse(year_offset < off, 0, ifelse(year_offset >= off, 1, NA)))
+           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   
-  rout_notinf <- BIRDx %>% 
-    select(RouteId, Year, YearInfested, Infested) %>% 
-    filter(YearInfested == 0) %>% 
-    distinct() %>% 
-    group_by(RouteId) %>% 
-    mutate(maxYear = max(Year)) %>% 
-    select(RouteId, maxYear) %>% 
-    distinct()
-  
-  ## if a route was never infested, year_offset is 'equal' to the last year it was sampled
-  for(i in 1:nrow(BIRDx)){
-    if(BIRDx$YearInfested[i] == 0){
-      off_noin <- rout_notinf[which(rout_notinf$RouteId == BIRDx$RouteId[i]), 2]
-      BIRDx$year_offset[i] <- BIRDx$Year[i] - as.numeric(off_noin) + off - 1
-    }
-  }
-  ## all filters ----------------------------
-  BIRDx1 <- BIRDx %>% 
-    filter(YearInfested != 0,                               # only routes that were infested at some point
-           year_offset > -20 & year_offset < 20) %>%        # look only +-20 years before/after infestation
-    group_by(RouteId) %>% 
-    group_split()
-  
-  for(i in 1:length(BIRDx1)){                               # look only at routes that were infested for at least 10 years
-    a <- BIRDx1[[i]]
-    maxi <- max(a$year_offset)
-    if(maxi < 10) {BIRDx1[[i]] <- NULL }
-  }
-  
-  BIRDx2_1 <- data.table::rbindlist(BIRDx1) %>% 
-    as_tibble()
-  
-  return(BIRDx2_1)
+  return(BIRDx2)
 }
 
 create_data_perm <- function(offset2, BIRDin, perms) {
@@ -148,6 +122,7 @@ run_sensi <- function(species, offsets) {
   off <- offsets
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
+  dir.create(glue("data/models_res/{species}/sensi"))
   
   for(i in 1:nrow(routes)){
     
@@ -158,7 +133,6 @@ run_sensi <- function(species, offsets) {
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
-    dir.create(glue("data/models_res/{species}/sensi"))
     saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
