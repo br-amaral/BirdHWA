@@ -5,9 +5,10 @@ library(INLA)
 library(tidyselect)
 
 ### choose species here! species list is: 
-###  BHVI BLBW BTNW HETH MAWA OVEN RBNU ACFL  
-#spsr <- species <- "RBNU"
-source("~/GitHub/BirdHWA/7_extract_fixed_pars.R")
+###  "ACFL"  "BHVI"  "BLBW"  "BTNW"  "HETH"  "MAWA"  "RBNU"  
+###  "BLJA"  "CERW"  "EAPH"  "REVI"  "SCTA"  "WBNU"  "WEWA"  "WOTH"
+#   spsr <- species <- 
+source("7_extract_fixed_pars.R")
 # source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 #  source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 
@@ -60,7 +61,7 @@ pars_models <- as_tibble(rbind(pars_models_FUNC(1),
 
 (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
 
-write_rds(summary_results2, file = glue("data/models_res/{species}/summary_results2.rds"))
+#write_rds(summary_results2, file = glue("data/models_res/{species}/summary_results2.rds"))
 
 year_ <- waic_best$year[1]
 mod_ <- waic_best$model[1]

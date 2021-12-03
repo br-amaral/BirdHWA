@@ -173,7 +173,7 @@ run_perm <- function(species, perm, offsets) {
   
   for(i in 1:perms){
     
-    BIRDtab2 <- create_data_perm(off, BIRDtab, perms)
+    BIRDtab2 <- create_data_perm(off, BIRDtab, perms[i])
     
     resu <- run_model(BIRDtab2, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
