@@ -122,7 +122,22 @@ run_sensi <- function(species, offsets) {
   off <- offsets
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
+  
   dir.create(glue("data/models_res/{species}/sensi"))
+  intercept <- matrix(NA, nrow = nrow(routes), ncol = 4) %>%
+    as_tibble()
+  
+  colnames(intercept) <- c("route", "mean", "low", "up")
+  intercept$route <- routes
+  
+  intercept <- intercept %>% 
+    mutate(mean = as.numeric(mean),
+           low = as.numeric(low),
+           up = as.numeric(up))
+  
+    
+  year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
+    year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   
   for(i in 1:nrow(routes)){
     
@@ -133,10 +148,35 @@ run_sensi <- function(species, offsets) {
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
+   
+    coefs <- resu$summary.fixed[,c(1,3,5)]
+    
+    intercept[i,2:4] <- coefs["(Intercept)",]
+    year_offset[i,2:4] <- coefs["year_offset",]
+    infoff[i,2:4] <- coefs["infoff",]
+    NewObserver[i,2:4] <- coefs["NewObserverTRUE",]
+    temp_min_scale[i,2:4] <- coefs["temp_min_scale",]
+    year_offset.infoff[i,2:4] <- coefs["year_offset:infoff",]
+    year_offset.temp_min_scale[i,2:4] <- coefs["year_offset:temp_min_scale",]
+    infoff.temp_min_scale[i,2:4] <- coefs["infoff:temp_min_scale",]
+    year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
+    
     saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
+    rm(coefs)
   }
+  
+  saveRDS(intercept, file = glue("data/models_res/{species}/sensi/intercept_{species}.rds", sep= ""))
+  saveRDS(year_offset, file = glue("data/models_res/{species}/sensi/year_offset_{species}.rds", sep= ""))
+  saveRDS(infoff, file = glue("data/models_res/{species}/sensi/infoff_{species}.rds", sep= ""))
+  saveRDS(NewObserver, file = glue("data/models_res/{species}/sensi/NewObserver_{species}.rds", sep= ""))
+  saveRDS(temp_min_scale, file = glue("data/models_res/{species}/sensi/temp_min_scale_{species}.rds", sep= ""))
+  saveRDS(year_offset.infoff, file = glue("data/models_res/{species}/sensi/year_offset.infoff_{species}.rds", sep= ""))
+  saveRDS(year_offset.temp_min_scale, file = glue("data/models_res/{species}/sensi/year_offset.temp_min_scale_{species}.rds", sep= ""))
+  saveRDS(infoff.temp_min_scale, file = glue("data/models_res/{species}/sensi/infoff.temp_min_scale_{species}.rds", sep= ""))
+  saveRDS(year_offset.infoff.temp_min_scale, file = glue("data/models_res/{species}/sensi/year_offset.infoff.temp_min_scale_{species}.rds", sep= ""))
+  
 }
 
 run_perm <- function(species, perm, offsets) {
