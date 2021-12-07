@@ -45,6 +45,22 @@ create_data <- function(offset2, BIRDx) {
   return(BIRDx2)
 }
 
+# function to randomize infestation year
+permute_data <- function(BIRDy){
+  # all
+  numb_rou <- length(unique(BIRDy$RouteId))
+  infes_years <- sort(unique(BIRDy$YearInfested))
+  len_inf <- length(infes_years) - 2
+  infes_years <- c(infes_years, rep(0,len_inf))
+  infyr_vec <- sample(x = infes_years, size = numb_rou, replace = T)
+  perm_key <- as.data.frame(cbind(unique(BIRDy$RouteId),infyr_vec))
+  colnames(perm_key) <- c("RouteId", "YearInfestedPerm")
+  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId")
+  
+  # only infested
+  
+}
+
 run_model <- function(BIRDx_sub, formula) {
   model <- inla(formula, family="poisson", data=BIRDx_sub, 
                 control.predictor=list(compute=TRUE), 
