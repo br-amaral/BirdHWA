@@ -58,6 +58,16 @@ permute_data <- function(BIRDy){
   BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId")
   
   # only infested
+  numb_rou <- length(unique(BIRDy$RouteId))
+  noinf_rou <- nrow(unique(BIRDy[which(BIRDy$YearInfested == 0),1]))
+  inf_rou <- numb_rou - noinf_rou
+  infes_years <- sort(unique(BIRDy$YearInfested))[-1]
+  infyr_vec <- sample(x = infes_years, size = inf_rou, replace = T)
+  key_no <- cbind(unique(BIRDy[which(BIRDy$YearInfested == 0),1]), rep(0,noinf_rou))
+  key_inf <- cbind(unique(BIRDy[which(BIRDy$YearInfested != 0),1]), infyr_vec)
+  colnames(key_no) <- colnames(key_inf) <- c("RouteId", "YearInfestedPerm")
+  perm_key <- as.data.frame(rbind(key_no, key_inf))
+  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId")
   
 }
 
