@@ -55,7 +55,9 @@ permute_data <- function(BIRDy){
   infyr_vec <- sample(x = infes_years, size = numb_rou, replace = T)
   perm_key <- as.data.frame(cbind(unique(BIRDy$RouteId),infyr_vec))
   colnames(perm_key) <- c("RouteId", "YearInfestedPerm")
-  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId")
+  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId") %>% 
+    rename( old_yearinfested = YearInfested,
+            YearInfested = YearInfestedPerm)
   
   # only infested
   numb_rou <- length(unique(BIRDy$RouteId))
@@ -67,8 +69,31 @@ permute_data <- function(BIRDy){
   key_inf <- cbind(unique(BIRDy[which(BIRDy$YearInfested != 0),1]), infyr_vec)
   colnames(key_no) <- colnames(key_inf) <- c("RouteId", "YearInfestedPerm")
   perm_key <- as.data.frame(rbind(key_no, key_inf))
-  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId")
+  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId") %>% 
+    rename( old_yearinfested = YearInfested,
+            YearInfested = YearInfestedPerm)
   
+  # create yrhwa
+  BIRDy3 <- BIRDy2 %>% 
+    mutate(yrhwa = Year - YearInfested,
+           Infested = ifelse((Year - YearInfested) < 1, 0, 1),
+           Infested = replace(Infested, !is.finite(Infested), 0),
+           yrhwa = replace(yrhwa, !is.finite(yrhwa), 0))
+  
+  ## Create an year offset for that species ------------------  
+  BIRDy4 <- BIRDy3 %>%  
+    # remove 20 ears before and after infestation
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
+    filter(year_offset > -20 & year_offset < 20) %>% 
+    # Only routes infested for at least 10 years
+    group_by(RouteId) %>% 
+    mutate(max = max(year_offset)) %>%  
+    filter(max > 9) %>% 
+    ungroup() %>% 
+    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset2, 0),
+           # infoff: 'infested' route according to the delay in the effect (offset)
+           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
 }
 
 run_model <- function(BIRDx_sub, formula) {
