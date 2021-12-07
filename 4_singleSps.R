@@ -15,7 +15,7 @@ BIRD_FILE_PATH <- "data/BirdHWA_2.rds"
 sps_list <- read_csv(SPECIES_DATA_PATH)
 BIRD <- readRDS(BIRD_FILE_PATH)
 
-Ósingle_sps <- function(species){
+single_sps <- function(species){
   ## select a species and keep undetected records --------------------
   BIRD2a <- BIRD %>% 
     filter(SpeciesCode == species)
