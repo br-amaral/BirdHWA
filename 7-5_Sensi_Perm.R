@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-species <- "BHVI"
+#species <- "BHVI"
 offsets <- 2
 mod <- 1
 
@@ -26,7 +26,7 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
-create_data_sensi <- function(offset2, BIRDx) {
+create_data <- function(offset2, BIRDx) {
   ## Create an year offset for that species ------------------  
   BIRDx2 <- BIRDx %>%  
     # remove 20 ears before and after infestation
@@ -44,27 +44,6 @@ create_data_sensi <- function(offset2, BIRDx) {
   
   return(BIRDx2)
 }
-
-create_data_perm <- function(offset2, BIRDin, perms) {
-  ## Create an year offset for that species ------------------  
-  BIRDx2 <- BIRDx %>%  
-    # remove 20 ears before and after infestation
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
-    filter(year_offset > -20 & year_offset < 20) %>% 
-    # Only routes infested for at least 10 years
-    group_by(RouteId) %>% 
-    mutate(max = max(year_offset)) %>%  
-    filter(max > 9) %>% 
-    ungroup() %>% 
-    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
-    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset2, 0),
-           # infoff: 'infested' route according to the delay in the effect (offset)
-           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
-  
-  return(BIRDx2)
-  
-  }
-
 
 run_model <- function(BIRDx_sub, formula) {
   model <- inla(formula, family="poisson", data=BIRDx_sub, 
@@ -73,26 +52,26 @@ run_model <- function(BIRDx_sub, formula) {
   return(model)
 }
 
-
 run_sensi <- function(species, offsets) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
-  BIRDtab2 <- create_data_sensi(offsets, BIRDtab)
+  BIRDtab2 <- create_data(offsets, BIRDtab)
   off <- offsets
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
   
   dir.create(glue("data/models_res/{species}/sensi"))
-  intercept <- matrix(NA, nrow = nrow(routes), ncol = 4) %>%
+  intercept <- matrix(NA, nrow = nrow(routes), ncol = 3) %>%
     as_tibble()
-  
-  colnames(intercept) <- c("route", "mean", "low", "up")
-  intercept$route <- routes
+
+  colnames(intercept) <- c("mean", "low", "up")
   
   intercept <- intercept %>% 
     mutate(mean = as.numeric(mean),
            low = as.numeric(low),
            up = as.numeric(up))
+  intercept <- as.data.frame(intercept)
+  intercept <- cbind(routes,intercept)
   
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
@@ -119,48 +98,167 @@ run_sensi <- function(species, offsets) {
     infoff.temp_min_scale[i,2:4] <- coefs["infoff:temp_min_scale",]
     year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
     
-    saveRDS(object = get(name), file = name2)
+    #saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
     rm(coefs)
   }
   
-  saveRDS(intercept, file = glue("data/models_res/{species}/sensi/intercept_{species}.rds", sep= ""))
-  saveRDS(year_offset, file = glue("data/models_res/{species}/sensi/year_offset_{species}.rds", sep= ""))
-  saveRDS(infoff, file = glue("data/models_res/{species}/sensi/infoff_{species}.rds", sep= ""))
-  saveRDS(NewObserver, file = glue("data/models_res/{species}/sensi/NewObserver_{species}.rds", sep= ""))
-  saveRDS(temp_min_scale, file = glue("data/models_res/{species}/sensi/temp_min_scale_{species}.rds", sep= ""))
-  saveRDS(year_offset.infoff, file = glue("data/models_res/{species}/sensi/year_offset.infoff_{species}.rds", sep= ""))
-  saveRDS(year_offset.temp_min_scale, file = glue("data/models_res/{species}/sensi/year_offset.temp_min_scale_{species}.rds", sep= ""))
-  saveRDS(infoff.temp_min_scale, file = glue("data/models_res/{species}/sensi/infoff.temp_min_scale_{species}.rds", sep= ""))
-  saveRDS(year_offset.infoff.temp_min_scale, file = glue("data/models_res/{species}/sensi/year_offset.infoff.temp_min_scale_{species}.rds", sep= ""))
+  resu <- run_model(BIRDtab2, formula)
+  coefs <- resu$summary.fixed[,c(1,3,5)]
+  
+  intercept$par <- "intercept"
+  year_offset$par <- "year_offset"
+  infoff$par <- "infoff"
+  NewObserver$par <- "NewObserver"
+  temp_min_scale$par <- "temp_min_scale"
+  year_offset.infoff$par <- "year_offset.infoff"
+  year_offset.temp_min_scale$par <- "year_offset.temp_min_scale"
+  infoff.temp_min_scale$par <- "infoff.temp_min_scale"
+  year_offset.infoff.temp_min_scale$par <- "year_offset.infoff.temp_min_scale"
+  
+  intercept$par2 <- "B0"
+  year_offset$par2 <- "B1"
+  infoff$par2 <- "B2"
+  NewObserver$par2 <- "B8"
+  temp_min_scale$par2 <- "B4"
+  year_offset.infoff$par2 <- "B3"
+  year_offset.temp_min_scale$par2 <- "B5"
+  infoff.temp_min_scale$par2 <- "B6"
+  year_offset.infoff.temp_min_scale$par2 <- "B7"
+  
+  plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
+                  year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
+  
+  plot_tib2 <- plot_tib[1:9, ]
+  plot_tib2[1:9, ] <- NA
+  plot_tib2$mean <- coefs$mean
+  plot_tib2$low <- coefs$`0.025quant`
+  plot_tib2$up <- coefs$`0.975quant`
+  plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
+  
+  ptt <- ggplot(data = plot_tib, aes(x = par2, y = mean)) +
+    geom_jitter(col = "gray") +
+    #geom_errorbar(aes(ymin=low, ymax=up),
+    #              size=.3,    # Thinner lines
+    #              width=.2) 
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position="none") +
+    ylab("Estimates") +
+    xlab("Coefficients") +
+    geom_point(data = plot_tib2, aes(x = par2, y = mean)) +
+    geom_errorbar(data = plot_tib2, aes(ymin=low, ymax=up),
+                  size=.3, width=0.1) +
+    ggtitle("Sensitivity Analysis")
+  
+  saveRDS(plot_tib, file = glue("data/models_res/{species}/sensi/coefs_{species}.rds", sep= ""))
+  saveRDS(ptt, file = glue("data/models_res/{species}/sensi/sensiplot_{species}.rds", sep= ""))  
   
 }
 
 run_perm <- function(species, perm, offsets) {
   off <- offsets
-  perms <- perm
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
+  BIRDtab2 <- create_data(offsets, BIRDtab)
   
-  for(i in 1:perms){
+  dir.create(glue("data/models_res/{species}/perm"))
+  
+  intercept <- matrix(NA, nrow = perm, ncol = 3) %>%
+    as_tibble()
+  
+  colnames(intercept) <- c("mean", "low", "up")
+  
+  intercept <- intercept %>% 
+    mutate(mean = as.numeric(mean),
+           low = as.numeric(low),
+           up = as.numeric(up))
+  intercept <- as.data.frame(intercept)
+
+  year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
+    year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
+  
+  for(i in 1:perm){
     
-    BIRDtab2 <- create_data_perm(off, BIRDtab, perms[i])
+    BIRDtab3 <- BIRDtab2 
+    BIRDtab3$SpeciesTotal <- sample(BIRDtab3$SpeciesTotal)  ## rearrange the values randomly
     
-    resu <- run_model(BIRDtab2, formula)
+    resu <- run_model(BIRDtab3, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
-    assign(name, resu)
-    print(name)
-    name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
-    #dir.create(glue("data/models_res/{species}"))
-    if (i == 1) {dir.create(glue("data/models_res/{species}/perm"))}
-    saveRDS(object = get(name), file = name2)
+    #assign(name, resu)
+    print(i)
+    #name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
+    
+    coefs <- resu$summary.fixed[,c(1,3,5)]
+    
+    intercept[i,1:3] <- coefs["(Intercept)",]
+    year_offset[i,1:3] <- coefs["year_offset",]
+    infoff[i,1:3] <- coefs["infoff",]
+    NewObserver[i,1:3] <- coefs["NewObserverTRUE",]
+    temp_min_scale[i,1:3] <- coefs["temp_min_scale",]
+    year_offset.infoff[i,1:3] <- coefs["year_offset:infoff",]
+    year_offset.temp_min_scale[i,1:3] <- coefs["year_offset:temp_min_scale",]
+    infoff.temp_min_scale[i,1:3] <- coefs["infoff:temp_min_scale",]
+    year_offset.infoff.temp_min_scale[i,1:3] <- coefs["year_offset:infoff:temp_min_scale",]
+    
+    #saveRDS(object = get(name), file = name2)
     rm(resu)
-    rm(BIRDtab2)
+    rm(BIRDtab3)
     rm(name)
   }
+  resu <- run_model(BIRDtab2, formula)
+  coefs <- resu$summary.fixed[,c(1,3,5)]
+  
+  intercept$par <- "intercept"
+  year_offset$par <- "year_offset"
+  infoff$par <- "infoff"
+  NewObserver$par <- "NewObserver"
+  temp_min_scale$par <- "temp_min_scale"
+  year_offset.infoff$par <- "year_offset.infoff"
+  year_offset.temp_min_scale$par <- "year_offset.temp_min_scale"
+  infoff.temp_min_scale$par <- "infoff.temp_min_scale"
+  year_offset.infoff.temp_min_scale$par <- "year_offset.infoff.temp_min_scale"
+  
+  intercept$par2 <- "B0"
+  year_offset$par2 <- "B1"
+  infoff$par2 <- "B2"
+  NewObserver$par2 <- "B8"
+  temp_min_scale$par2 <- "B4"
+  year_offset.infoff$par2 <- "B3"
+  year_offset.temp_min_scale$par2 <- "B5"
+  infoff.temp_min_scale$par2 <- "B6"
+  year_offset.infoff.temp_min_scale$par2 <- "B7"
+  
+  plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
+                    year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
+  
+  plot_tib2 <- plot_tib[1:9,]
+  plot_tib2[1:9,] <- NA
+  plot_tib2$mean <- coefs$mean
+  plot_tib2$low <- coefs$`0.025quant`
+  plot_tib2$up <- coefs$`0.975quant`
+  plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
+  
+  pt <- ggplot(data = plot_tib, aes(x = par2, y = mean)) +
+    geom_jitter(col = "gray") +
+    #geom_errorbar(aes(ymin=low, ymax=up),
+    #              size=.3,    # Thinner lines
+    #              width=.2) 
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position="none") +
+    ylab("Estimates") +
+    xlab("Coefficients") +
+    geom_point(data = plot_tib2, aes(x = par2, y = mean)) +
+    geom_errorbar(data = plot_tib2, aes(ymin=low, ymax=up),
+                  size=.3, width=0.1) +
+    ggtitle("Permutation Analysis")
+  
+  saveRDS(plot_tib, file = glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= ""))  
+  saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
+  
 }
 
-
-run_sensi(species = species, offsets = 1)
-run_perm(species = species, perm = 10, offsets = 1)
+run_sensi(species = species, offsets = 2)
+run_perm(species = species, perm = 100, offsets = 2)
