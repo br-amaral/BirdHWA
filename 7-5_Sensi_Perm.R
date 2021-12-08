@@ -59,8 +59,21 @@ permute_data <- function(BIRDy){
     rename( old_yearinfested = YearInfested,
             YearInfested = YearInfestedPerm)
   
-  # only infested
-  numb_rou <- length(unique(BIRDy$RouteId))
+  ## permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
+  # find out how many routes first infested in each calendar year
+  yr_inf <- table(BIRDy$RouteId, BIRDy$YearInfested) %>% 
+    as.data.frame.matrix() %>% 
+    rownames_to_column("VALUE") %>% 
+    as_tibble() %>% 
+    mutate_if(is.numeric, ~1 * (. != 0)) %>% 
+    rename("RouteId" = VALUE)
+  
+  yr_inf_tot <- colSums(yr_inf[,2:ncol(yr_inf)])
+  yr_inf_tot <- yr_inf_tot[1]
+  # sample x number of routes for each year
+  for( i in 1)
+    
+    numb_rou <- length(unique(BIRDy$RouteId))
   noinf_rou <- nrow(unique(BIRDy[which(BIRDy$YearInfested == 0),1]))
   inf_rou <- numb_rou - noinf_rou
   infes_years <- sort(unique(BIRDy$YearInfested))[-1]
@@ -114,7 +127,7 @@ run_sensi <- function(species, offsets) {
   dir.create(glue("data/models_res/{species}/sensi"))
   intercept <- matrix(NA, nrow = nrow(routes), ncol = 3) %>%
     as_tibble()
-
+  
   colnames(intercept) <- c("mean", "low", "up")
   
   intercept <- intercept %>% 
@@ -136,7 +149,7 @@ run_sensi <- function(species, offsets) {
     assign(name, resu)
     print(name)
     name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
-   
+    
     coefs <- resu$summary.fixed[,c(1,3,5)]
     
     intercept[i,2:4] <- coefs["(Intercept)",]
@@ -179,7 +192,7 @@ run_sensi <- function(species, offsets) {
   year_offset.infoff.temp_min_scale$par2 <- "B7"
   
   plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
-                  year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
+                    year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
   
   plot_tib2 <- plot_tib[1:9, ]
   plot_tib2[1:9, ] <- NA
@@ -226,7 +239,7 @@ run_perm <- function(species, perm, offsets) {
            low = as.numeric(low),
            up = as.numeric(up))
   intercept <- as.data.frame(intercept)
-
+  
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   
