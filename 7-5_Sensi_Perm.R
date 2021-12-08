@@ -69,11 +69,24 @@ permute_data <- function(BIRDy){
     rename("RouteId" = VALUE)
   
   yr_inf_tot <- colSums(yr_inf[,2:ncol(yr_inf)])
-  yr_inf_tot <- yr_inf_tot[1]
+  yr_inf_tot <- yr_inf_tot[-1]
+  sum_yrinf <- sum(yr_inf_tot)
+  
+  routes <- unique(BIRDy$RouteId)
+  new_inf_rou <- as_tibble(matrix(NA, ncol = 2, nrow = length(routes)))
+  colnames(new_inf_rou) <- c("RouteId", "NewYearInfested")
+  new_inf_rou$RouteId <- routes
+  
   # sample x number of routes for each year
-  for( i in 1)
+  for(i in 1:sum_yrinf){
+    yr <- as.numeric(names(yr_inf_tot[i]))
+    times <- as.numeric(yr_inf_tot[i])
+    samp_rou <- sample(x = routes, size = times, replace = TRUE)
     
-    numb_rou <- length(unique(BIRDy$RouteId))
+    
+  }
+  
+  numb_rou <- length(unique(BIRDy$RouteId))
   noinf_rou <- nrow(unique(BIRDy[which(BIRDy$YearInfested == 0),1]))
   inf_rou <- numb_rou - noinf_rou
   infes_years <- sort(unique(BIRDy$YearInfested))[-1]
