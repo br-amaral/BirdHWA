@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-#species <- "BHVI"
+# species <- "BHVI"
 offsets <- 2
 mod <- 1
 
@@ -46,7 +46,7 @@ create_data <- function(offset2, BIRDx) {
 }
 
 # function to randomize infestation year
-permute_data <- function(BIRDy){
+permute_data <- function(offset2, BIRDy){
   # all
   numb_rou <- length(unique(BIRDy$RouteId))
   infes_years <- sort(unique(BIRDy$YearInfested))
@@ -69,7 +69,6 @@ permute_data <- function(BIRDy){
     rename("RouteId" = VALUE)
   
   yr_inf_tot <- colSums(yr_inf[,2:ncol(yr_inf)])
-  yr_inf_tot <- yr_inf_tot[-1]
   sum_yrinf <- sum(yr_inf_tot)
   
   routes <- unique(BIRDy$RouteId)
@@ -90,23 +89,14 @@ permute_data <- function(BIRDy){
     routes <- routes[which(routes %!in% samp_rou)]
   }
   
-  numb_rou <- length(unique(BIRDy$RouteId))
-  noinf_rou <- nrow(unique(BIRDy[which(BIRDy$YearInfested == 0),1]))
-  inf_rou <- numb_rou - noinf_rou
-  infes_years <- sort(unique(BIRDy$YearInfested))[-1]
-  infyr_vec <- sample(x = infes_years, size = inf_rou, replace = T)
-  key_no <- cbind(unique(BIRDy[which(BIRDy$YearInfested == 0),1]), rep(0,noinf_rou))
-  key_inf <- cbind(unique(BIRDy[which(BIRDy$YearInfested != 0),1]), infyr_vec)
-  colnames(key_no) <- colnames(key_inf) <- c("RouteId", "YearInfestedPerm")
-  perm_key <- as.data.frame(rbind(key_no, key_inf))
-  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId") %>% 
+  BIRDy2 <- left_join(BIRDy, new_inf_rou, by = "RouteId") %>% 
     rename( old_yearinfested = YearInfested,
-            YearInfested = YearInfestedPerm)
+            YearInfested = NewYearInfested)
   
   # create yrhwa
   BIRDy3 <- BIRDy2 %>% 
     mutate(yrhwa = Year - YearInfested,
-           Infested = ifelse((Year - YearInfested) < 1, 0, 1),
+           Infested = ifelse((Year - YearInfested) >= 0, 1, 0),
            Infested = replace(Infested, !is.finite(Infested), 0),
            yrhwa = replace(yrhwa, !is.finite(yrhwa), 0))
   
@@ -261,9 +251,7 @@ run_perm <- function(species, perm, offsets) {
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   
   for(i in 1:perm){
-    
-    BIRDtab3 <- BIRDtab2 
-    BIRDtab3$SpeciesTotal <- sample(BIRDtab3$SpeciesTotal)  ## rearrange the values randomly
+    BIRDtab3 <- permute_data(offsets, BIRDtab2)
     
     resu <- run_model(BIRDtab3, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
