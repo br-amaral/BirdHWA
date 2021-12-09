@@ -47,17 +47,6 @@ create_data <- function(offset2, BIRDx) {
 
 # function to randomize infestation year
 permute_data <- function(offset2, BIRDy){
-  # all
-  numb_rou <- length(unique(BIRDy$RouteId))
-  infes_years <- sort(unique(BIRDy$YearInfested))
-  len_inf <- length(infes_years) - 2
-  infes_years <- c(infes_years, rep(0,len_inf))
-  infyr_vec <- sample(x = infes_years, size = numb_rou, replace = T)
-  perm_key <- as.data.frame(cbind(unique(BIRDy$RouteId),infyr_vec))
-  colnames(perm_key) <- c("RouteId", "YearInfestedPerm")
-  BIRDy2 <- left_join(BIRDy, perm_key, by = "RouteId") %>% 
-    rename( old_yearinfested = YearInfested,
-            YearInfested = YearInfestedPerm)
   
   ## permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
   # find out how many routes first infested in each calendar year
@@ -250,6 +239,8 @@ run_perm <- function(species, perm, offsets) {
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   
+  print(species)
+  
   for(i in 1:perm){
     BIRDtab3 <- permute_data(offsets, BIRDtab2)
     
@@ -329,5 +320,5 @@ run_perm <- function(species, perm, offsets) {
   
 }
 
-run_sensi(species = species, offsets = 2)
-run_perm(species = species, perm = 100, offsets = 2)
+# run_sensi(species = species, offsets = 2)
+# run_perm(species = species, perm = 100, offsets = 2)
