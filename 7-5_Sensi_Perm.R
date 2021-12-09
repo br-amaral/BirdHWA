@@ -77,13 +77,17 @@ permute_data <- function(BIRDy){
   colnames(new_inf_rou) <- c("RouteId", "NewYearInfested")
   new_inf_rou$RouteId <- routes
   
+  '%!in%' <- function(x,y)!('%in%'(x,y))
+  
   # sample x number of routes for each year
-  for(i in 1:sum_yrinf){
+  for(i in 1:length(yr_inf_tot)){
     yr <- as.numeric(names(yr_inf_tot[i]))
     times <- as.numeric(yr_inf_tot[i])
-    samp_rou <- sample(x = routes, size = times, replace = TRUE)
+    samp_rou <- sample(x = routes, size = times, replace = FALSE)
     
+    new_inf_rou[which(new_inf_rou$RouteId %in% samp_rou),2] <- yr
     
+    routes <- routes[which(routes %!in% samp_rou)]
   }
   
   numb_rou <- length(unique(BIRDy$RouteId))
