@@ -1,3 +1,11 @@
+# Predict quantiles
+# Input: summary_results file for each species
+# Output: plot of temperature distribution
+#         plot of predictions of temperature quadrants
+#         table with population predictions
+# WARNING: can't run everything at once, because 'maxi' (upper limit of prediction plots) varies according
+#            to species in different temperatures. has to be added manually once you look at the results
+
 library(tidyverse)
 library(gridExtra)
 library(glue)
@@ -286,3 +294,11 @@ pred_t2 <- predict.inla2(spsr, mod_, t2, maxi)[1]
 pred_t2 <- pred_t2$plot_preds
 pred_t3 <- predict.inla2(spsr, mod_, t3, maxi)[1]
 pred_t3 <- pred_t3$plot_preds
+
+pred_t1$temp <- "t1"
+pred_t2$temp <- "t2"
+pred_t3$temp <- "t3"
+
+pred <- rbind(pred_t1, pred_t2, pred_t3)
+
+write_rds(pred, file = glue("preds_{species}.rds"))
