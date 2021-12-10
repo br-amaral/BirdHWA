@@ -238,7 +238,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
     filter(!(HWA == 'no_infest' & year_off_t < 0)) %>% 
     arrange(desc(HWA)) 
   
-  write_csv(plot_preds, file = glue("data/{spsr}_{temp}preds.csv"))
+  #write_csv(plot_preds, file = glue("data/{spsr}_{temp}preds.csv"))
   
   pp <- ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
           geom_line(size = 0.8) + 
