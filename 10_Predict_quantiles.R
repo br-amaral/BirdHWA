@@ -182,14 +182,14 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   b6u <- pars_tib$infoff_temp_min_scale[[1]][3]
   b7u <- pars_tib$year_offset_infoff_temp_min_scale[[1]][3]
   
-  no_infes <- no_infes %>% 
+  no_infesu <- no_infes %>% 
     mutate(predictionU = exp(
       b0u + (b1u * year_off_t) + (b3u * temp_t) +
         (b5u * year_off_t * temp_t)),
       HWA = 'infest'
     )
   
-  infes <- infes %>% 
+  infesu <- infes %>% 
     mutate(predictionU = exp(
       b0u + (b1u * year_off_t) + (b2u * infoff_t) + (b3u * temp_t) +
         (b4u * year_off_t * infoff_t) + (b5u * year_off_t * temp_t) +
@@ -206,14 +206,14 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   b6l <- pars_tib$infoff_temp_min_scale[[1]][2]
   b7l <- pars_tib$year_offset_infoff_temp_min_scale[[1]][2]
   
-  no_infes <- no_infes %>% 
+  no_infesl <- no_infes %>% 
     mutate(predictionL = exp(
       b0l + (b1l * year_off_t) + (b3l * temp_t) +
         (b5l * year_off_t * temp_t)),
       HWA = 'infest'
     )
   
-  infes <- infes %>% 
+  infesl <- infes %>% 
     mutate(predictionL = exp(
       b0l + (b1l * year_off_t) + (b2l * infoff_t) + (b3l * temp_t) +
         (b4l * year_off_t * infoff_t) + (b5l * year_off_t * temp_t) +
@@ -232,44 +232,45 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
   write_csv(plot_preds, file = glue("data/{spsr}_{temp}preds.csv"))
   
-  ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
-    geom_line(size = 0.8) + 
-    #geom_line(aes(x = year, y = prediction), data = off_gap,
-    #          col = 'white', size=2, alpha=1) +
-    geom_vline(xintercept = 0, size=0.8, color = "gray43") +
-    geom_vline(xintercept = off, linetype="dotted", color = "gray43", size=0.8) +
-    geom_point(size = 1.5) + 
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          #axis.text = element_text(size= 16),
-          #axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
-          #axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)),
-          #legend.title = element_text(size = 18),
-          #legend.text = element_text(size = 16),
-          legend.position = "none",
-          #axis.title = element_text(size = 16)
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank()) + 
-    #xlab("Years since HWA infestation") +
-    #ylab("Bird Abundance") +
-    scale_x_continuous(breaks = c(-10,-5,0,5,10,15,20)) +
-    ylim(0, max) +
-    scale_colour_manual("legend",
-                      values = c("no_infest" = "gray82", "infest" = "gray28"),
-                      labels = c("Not infested", "Infested"))
-  # confidence interval
-  #geom_line(aes(x = year, y = predictionL, col = HWA), data = plot_preds) +
-  #geom_line(aes(x = year, y = predictionU, col = HWA), data = plot_preds)
-  
+  pp <- ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
+          geom_line(size = 0.8) + 
+          #geom_line(aes(x = year, y = prediction), data = off_gap,
+          #          col = 'white', size=2, alpha=1) +
+          geom_vline(xintercept = 0, size=0.8, color = "gray43") +
+          geom_vline(xintercept = off, linetype="dotted", color = "gray43", size=0.8) +
+          geom_point(size = 1.5) + 
+          theme_bw() +
+          theme(panel.grid.major = element_blank(),
+                panel.grid.minor = element_blank(),
+                #axis.text = element_text(size= 16),
+                #axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
+                #axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)),
+                #legend.title = element_text(size = 18),
+                #legend.text = element_text(size = 16),
+                legend.position = "none",
+                #axis.title = element_text(size = 16)
+                axis.title.x = element_blank(),
+                axis.title.y = element_blank()) + 
+          #xlab("Years since HWA infestation") +
+          #ylab("Bird Abundance") +
+          scale_x_continuous(breaks = c(-10,-5,0,5,10,15,20)) +
+          ylim(0, max) +
+          scale_colour_manual("legend",
+                            values = c("no_infest" = "gray82", "infest" = "gray28"),
+                            labels = c("Not infested", "Infested"))
+          # confidence interval
+          #geom_line(aes(x = year, y = predictionL, col = HWA), data = plot_preds) +
+          #geom_line(aes(x = year, y = predictionU, col = HWA), data = plot_preds)
+  return(list(plot_preds = plot_preds,
+              plott = pp))
 }
 
 
-# maxi <- 32
+# maxi <- 4
 
-a <- predict.inla2(spsr, mod_, t1, maxi)
-b <- predict.inla2(spsr, mod_, t2, maxi)
-c <- predict.inla2(spsr, mod_, t3, maxi)
+a <- predict.inla2(spsr, mod_, t1, maxi)[2]
+b <- predict.inla2(spsr, mod_, t2, maxi)[2]
+c <- predict.inla2(spsr, mod_, t3, maxi)[2]
 
 grid.arrange(a, b, c, ncol = 3)
 print(species)
@@ -279,5 +280,9 @@ unique(BIRDtab$sd_tempMi)/100
 
 quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
 
-
-
+pred_t1 <- predict.inla2(spsr, mod_, t1, maxi)[1]
+pred_t1 <- pred_t1$plot_preds
+pred_t2 <- predict.inla2(spsr, mod_, t2, maxi)[1]
+pred_t2 <- pred_t2$plot_preds
+pred_t3 <- predict.inla2(spsr, mod_, t3, maxi)[1]
+pred_t3 <- pred_t3$plot_preds
