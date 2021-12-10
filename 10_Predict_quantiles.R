@@ -301,4 +301,4 @@ pred_t3$temp <- "t3"
 
 pred <- rbind(pred_t1, pred_t2, pred_t3)
 
-write_rds(pred, file = glue("preds_{species}.rds"))
+write_rds(pred, file = glue("data/preds/preds_{species}.rds"))
