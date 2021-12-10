@@ -312,7 +312,9 @@ pmat <- pmat %>%
          temp3 = pull(temp_qunts[ ,4]),
          time = 20
   )
+pmat <- pmat[1:15,]
 
+colnames(pmat)[43] <- "time1"
 # estimates -----------
 prop_tabX <- as_tibble(matrix(NA,nrow = nrow(pmat), ncol = 6)) %>% 
   mutate(species = pmat$species) %>% 
@@ -331,24 +333,44 @@ for (i in 1:nrow(prop_tabX)){
   ifelse(!is.na(pmat$temp_min_scale.infoff.year_offset[i]), b7 <- pmat$temp_min_scale.infoff.year_offset[i], b7 <- 0)
   
   no_infes <- pmat[i,] %>% 
-    mutate(prediction1 = exp(b0 + (b1 * time) + (b3 * temp1) + (b5 * year_offset * temp1)),
-           prediction2 = exp(b0 + (b1 * time) + (b3 * temp2) + (b5 * year_offset * temp2)),
-           prediction3 = exp(b0 + (b1 * time) + (b3 * temp3) + (b5 * year_offset * temp3)),
+    mutate(prediction1 = exp(b0 + (b1 * time1) + (b3 * temp1) + (b5 * year_offset * temp1)),
+           prediction2 = exp(b0 + (b1 * time1) + (b3 * temp2) + (b5 * year_offset * temp2)),
+           prediction3 = exp(b0 + (b1 * time1) + (b3 * temp3) + (b5 * year_offset * temp3)),
            HWA = 'infest'
     )
   
-  infes <- pmat[i,] %>% 
-    mutate(prediction1 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp1) +
-                               (b4 * time * infoff) + (b5 * time * temp1) +
-                               (b6 * infoff * temp1) + (b7 * time * infoff * temp1)),
-           prediction2 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp2) +
-                               (b4 * time * infoff) + (b5 * time * temp2) +
-                               (b6 * infoff * temp2) + (b7 * time * infoff * temp2)),
-           prediction3 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp3) +
-                               (b4 * time * infoff) + (b5 * time * temp3) +
-                               (b6 * infoff * temp3) + (b7 * time * infoff * temp3)),
+  time1 <- pmat$time1[i]
+  infoff <- 1
+  temp1 <- pmat$temp1[i]
+  temp2 <- pmat$temp2[i]
+  temp3 <- pmat$temp3[i]
+  
+  infes <- pmat[i, ] %>% 
+    mutate(prediction1 = exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp1) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp1) +
+                               (b6 * infoff * temp1) + (b7 * time1 * infoff * temp1)),
+           prediction2 = exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp2) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp2) +
+                               (b6 * infoff * temp2) + (b7 * time1 * infoff * temp2)),
+           prediction3 = exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp3) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp3) +
+                               (b6 * infoff * temp3) + (b7 * time1 * infoff * temp3)),
            HWA = 'no_infest'
-    )
+    ) %>% 
+    select(prediction1, prediction2, prediction3)
+  
+  if(is.na(infes$prediction1)) {
+    infes$prediction1 <- exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp1) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp1) +
+                               (b6 * infoff * temp1) + (b7 * time1 * infoff * temp1))
+    infes$prediction2 <- exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp2) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp2) +
+                               (b6 * infoff * temp2) + (b7 * time1 * infoff * temp2))
+    infes$prediction3 <- exp(b0 + (b1 * time1) + (b2 * infoff) + (b3 * temp3) +
+                               (b4 * time1 * infoff) + (b5 * time1 * temp3) +
+                               (b6 * infoff * temp3) + (b7 * time1 * infoff * temp3))
+  }
+  
   prop_tabX$noinf1[i] <- no_infes$prediction1
   prop_tabX$inf1[i] <- infes$prediction1
   prop_tabX$noinf2[i] <- no_infes$prediction2
@@ -360,12 +382,46 @@ for (i in 1:nrow(prop_tabX)){
   
 }
 
-prop_tabX <- prop_tabX %>% 
-  mutate(prop1 = inf1 / noinf1,
-         prop2 = inf2 / noinf2,
-         prop3 = inf3 / noinf3)
+prop_tabX2 <- prop_tabX %>% 
+  mutate(prop1 = log(noinf1/inf1),
+         prop2 = log(noinf2/inf2),
+         prop3 = log(noinf3/inf3)) %>% 
+  select(species, inf1, noinf1, prop1, inf2, noinf2, prop2, inf3, noinf3, prop3)
 
-prop_tabX
+prop_tabX3 <- prop_tabX2 %>% 
+  pivot_longer(`prop1`:`prop3`, names_to = "temp", values_to = "change")
+
+ggplot(data = prop_tabX3, aes(y= species, x = change)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  geom_point(aes(shape = temp, color = temp), size = 2) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5) +
+  scale_x_continuous(breaks = seq(-3, 1, 0.5),
+                     limits = c(-3, 1, 0.5)) +
+  scale_color_manual(values = c("t1" = "blue4",
+                                "t2" = "violetred",
+                                "t3" = "darkorange3"),
+                     labels = c("t1" = "0.2",
+                                "t2" = "0.5",
+                                "t3" = "0.8"),
+                     name = "Temperature\nQuantiles")
+
+
+
+
+
 
 ## get percents attempt 2
 
@@ -379,7 +435,7 @@ import_pre <- function(xxx){
     t() %>% 
     as_tibble() %>%
     rename(not = V1, inf = V2) %>% 
-    mutate(ratio = inf / not)
+    mutate(ratio = log(inf / not))
 }
 
 per1 <- rep(c("BHVI","BLBW","BTNW","HETH","MAWA","OVEN","RBNU","ACFL",
@@ -445,9 +501,9 @@ make_gradient <- function(deg = 45, n = 100, cols = blues9) {
 #  )
 #}
 
-g <- make_gradient(
-  deg = 180, n = 500, cols = brewer.pal(9, "Spectral")
-)
+#g <- make_gradient(
+#  deg = 180, n = 500, cols = brewer.pal(9, "Spectral")
+#)
 
 tempcols <- rep(c("blue", "blue","yellow", "yellow", "firebrick4", "firebrick4"),8)
 
@@ -539,6 +595,7 @@ pers2c_n$sps <- factor(pers2c_n$sps, levels = rev(unique(pers2c_n$sps[order(pers
 
 pers2c_n <- pers2c_n[with(pers2c_n, order(-nums)),]
 
+# hemlock
 pl1 <- ggplot(data = pers2h_n, aes(y = sps, x = pop202)) +
   geom_vline(xintercept = 0,
              col = "gray43",
@@ -565,7 +622,7 @@ pl1 <- ggplot(data = pers2h_n, aes(y = sps, x = pop202)) +
                                "t2" = "0.5",
                                "t3" = "0.8"),
                     name = "Temperature\nQuantiles") 
-
+# control
 pl2 <- ggplot(data = pers2c_n, aes(y= sps, x = pop202)) +
   geom_vline(xintercept = 0,
              col = "gray43",
@@ -594,4 +651,4 @@ pl2 <- ggplot(data = pers2c_n, aes(y= sps, x = pop202)) +
                      name = "Temperature\nQuantiles")
 grid.arrange(pl1, pl2)
 
-
+pers <- rbind(pers2h_n,pers2c_n)
