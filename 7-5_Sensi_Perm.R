@@ -413,6 +413,7 @@ pred_senper_sps <- function(species){
   
 }
 
+# add real estimate on top
 
 (pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
     geom_vline(xintercept = 0,
