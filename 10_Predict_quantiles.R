@@ -274,11 +274,15 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
 }
 
 
-# maxi <- 4
+maxi <- 4
 
 a <- predict.inla2(spsr, mod_, t1, maxi)[2]
 b <- predict.inla2(spsr, mod_, t2, maxi)[2]
 c <- predict.inla2(spsr, mod_, t3, maxi)[2]
+
+a <- a$plott
+b <- b$plott
+c <- c$plott
 
 grid.arrange(a, b, c, ncol = 3)
 print(species)
