@@ -61,7 +61,7 @@ permute_data <- function(offset2, BIRDy){
   sum_yrinf <- sum(yr_inf_tot)
   
   routes <- unique(BIRDy$RouteId)
-  new_inf_rou <- as_tibble(matrix(NA, ncol = 2, nrow = length(routes)))
+  new_inf_rou <- as.data.frame(matrix(NA, ncol = 2, nrow = length(routes)))
   colnames(new_inf_rou) <- c("RouteId", "NewYearInfested")
   new_inf_rou$RouteId <- routes
   
@@ -73,7 +73,7 @@ permute_data <- function(offset2, BIRDy){
     times <- as.numeric(yr_inf_tot[i])
     samp_rou <- sample(x = routes, size = times, replace = FALSE)
     
-    new_inf_rou[which(new_inf_rou$RouteId %in% samp_rou),2] <- yr
+    new_inf_rou[which(new_inf_rou$RouteId %in% samp_rou),2] <- rep(yr, length(samp_rou))
     
     routes <- routes[which(routes %!in% samp_rou)]
   }
@@ -223,7 +223,7 @@ run_perm <- function(species, perm, offsets) {
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
-  dir.create(glue("data/models_res/{species}/perm"))
+ # dir.create(glue("data/models_res/{species}/perm"))
   
   intercept <- matrix(NA, nrow = perm, ncol = 3) %>%
     as_tibble()
