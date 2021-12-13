@@ -1,46 +1,46 @@
-## Script to import the results of coeficients of best models for all species affected by hemlock and controls
+# Plot percent of population change after 20 years of infestation
+# Input: preds_{species} for each species
+# Output: plot of population rate of change for each temperature quantile
 
 library(tidyverse)
 library(glue)
 library(gridExtra)
 library(egg)
-#library(grid)
-#library(RColorBrewer)
 
 SPSLIST_PATH <- glue("data/src/sps_list.csv")
 SPSPRED_PATH <- glue("data/preds/preds_{species}.rds")
 
 spslist <- read_csv(SPSLIST_PATH)
 
-preds_WEWA <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_WEWA.rds") %>% 
+preds_WEWA <- readRDS("data/preds/preds_WEWA.rds") %>% 
   mutate(species = "WEWA")
-preds_REVI <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_REVI.rds") %>% 
+preds_REVI <- readRDS("data/preds/preds_REVI.rds") %>% 
   mutate(species = "REVI")
-preds_BLJA <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_BLJA.rds") %>% 
+preds_BLJA <- readRDS("data/preds/preds_BLJA.rds") %>% 
   mutate(species = "BLJA")
-preds_SCTA <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_SCTA.rds") %>% 
+preds_SCTA <- readRDS("data/preds/preds_SCTA.rds") %>% 
   mutate(species = "SCTA")
-preds_WOTH <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_WOTH.rds") %>% 
+preds_WOTH <- readRDS("data/preds/preds_WOTH.rds") %>% 
   mutate(species = "WOTH")
-preds_CERW <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_CERW.rds") %>% 
+preds_CERW <- readRDS("data/preds/preds_CERW.rds") %>% 
   mutate(species = "CERW")
-preds_WBNU <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_WBNU.rds") %>% 
+preds_WBNU <- readRDS("data/preds/preds_WBNU.rds") %>% 
   mutate(species = "WBNU")
-preds_EAPH <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_EAPH.rds") %>% 
+preds_EAPH <- readRDS("data/preds/preds_EAPH.rds") %>% 
   mutate(species = "EAPH")
-preds_ACFL <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_ACFL.rds") %>% 
+preds_ACFL <- readRDS("data/preds/preds_ACFL.rds") %>% 
   mutate(species = "ACFL")
-preds_RBNU <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_RBNU.rds") %>% 
+preds_RBNU <- readRDS("data/preds/preds_RBNU.rds") %>% 
   mutate(species = "RBNU")
-preds_MAWA <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_MAWA.rds") %>% 
+preds_MAWA <- readRDS("data/preds/preds_MAWA.rds") %>% 
   mutate(species = "MAWA")
-preds_HETH <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_HETH.rds") %>% 
+preds_HETH <- readRDS("data/preds/preds_HETH.rds") %>% 
   mutate(species = "HETH")
-preds_BLBW <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_BLBW.rds") %>% 
+preds_BLBW <- readRDS("data/preds/preds_BLBW.rds") %>% 
   mutate(species = "BLBW")
-preds_BHVI <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_BHVI.rds") %>% 
+preds_BHVI <- readRDS("data/preds/preds_BHVI.rds") %>% 
   mutate(species = "BHVI")
-preds_BTNW <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/preds/preds_BTNW.rds") %>% 
+preds_BTNW <- readRDS("data/preds/preds_BTNW.rds") %>% 
   mutate(species = "BTNW")
 
 sps_preds <- rbind(preds_WEWA, preds_REVI, preds_BLJA, preds_SCTA, preds_WOTH, preds_CERW, preds_WBNU,
