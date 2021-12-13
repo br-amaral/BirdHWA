@@ -2,7 +2,8 @@
 # Input: summary_results file for each species
 # Output: plot of temperature distribution
 #         plot of predictions of temperature quadrants
-#         table with population predictions
+#         table with species predictions (preds_{species}.rds)
+#         table with species coefficients (coefs_{species}.rds)
 # WARNING: can't run everything at once, because 'maxi' (upper limit of prediction plots) varies according
 #            to species in different temperatures. has to be added manually once you look at the results
 
@@ -160,8 +161,8 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   ifelse(!is.na(pars_tib$year_offset_infoff[[1]][1]), b4 <- pars_tib$year_offset_infoff[[1]][1], b4 <- 0)
   ifelse(!is.na(pars_tib$year_offset_temp_min_scale[[1]][1]), b5 <- pars_tib$year_offset_temp_min_scale[[1]][1], b5 <- 0)
   ifelse(!is.na(pars_tib$infoff_temp_min_scale[[1]][1]), b6 <- pars_tib$infoff_temp_min_scale[[1]][1], b6 <- 0)
-  ifelse(!is.na(pars_tib$year_offset_infoff_temp_min_scale[[1]][1]), b7 <- pars_tib$year_offset_infoff_temp_min_scale[[1]][1], b7 <- 0)
-  
+  ifelse(!is.na(pars_tib$year_offset_infoff_temp_min_scale[[1]][1]), b7 <- pars_tib$  year_offset_infoff_temp_min_scale[[1]][1], b7 <- 0)
+    
   pred_tabX <- pred_tabX %>% 
     mutate(temp_t = temp)
   
@@ -228,6 +229,45 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
         (b6l * infoff_t * temp_t) + (b7l * year_off_t * infoff_t * temp_t)),
       HWA = 'no_infest'
     )
+  
+  # save coefs rds
+  pars_tib2 <- rep(NA, 8)
+  pars_tib2[1] <- b0
+  pars_tib2[2] <- b1
+  pars_tib2[3] <- b2
+  pars_tib2[4] <- b3
+  pars_tib2[5] <- b4
+  pars_tib2[6] <- b5
+  pars_tib2[7] <- b6
+  pars_tib2[8] <- b7
+  
+  pars_tib2 <- as_tibble(pars_tib2)
+  pars_tib2$par <- colnames(pars_tib)[4:11]
+  pars_tib2 <- pars_tib2 %>% 
+    relocate(par) %>% 
+    mutate(low = 0,
+           up = 0)
+  
+  pars_tib2[1,3] <- b0l
+  pars_tib2[2,3] <- b1l
+  pars_tib2[3,3] <- b2l
+  pars_tib2[4,3] <- b3l
+  pars_tib2[5,3] <- b4l
+  pars_tib2[6,3] <- b5l
+  pars_tib2[7,3] <- b6l
+  pars_tib2[8,3] <- b7l
+  
+  pars_tib2[1,4] <- b0u
+  pars_tib2[2,4] <- b1u
+  pars_tib2[3,4] <- b2u
+  pars_tib2[4,4] <- b3u
+  pars_tib2[5,4] <- b4u
+  pars_tib2[6,4] <- b5u
+  pars_tib2[7,4] <- b6u
+  pars_tib2[8,4] <- b7u
+  
+  write_rds(pars_tib2, file = glue("data/models_res/{species}/coefs_{species}.rds"))
+  
   # ---------
   plot_preds <- rbind(no_infes, infes)
   
