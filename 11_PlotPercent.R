@@ -8,7 +8,7 @@ library(gridExtra)
 library(egg)
 
 SPSLIST_PATH <- glue("data/src/sps_list.csv")
-SPSPRED_PATH <- glue("data/preds/preds_{species}.rds")
+#SPSPRED_PATH <- glue("data/preds/preds_{species}.rds")
 
 spslist <- read_csv(SPSLIST_PATH)
 
