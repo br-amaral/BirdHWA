@@ -168,16 +168,16 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
   no_infes <- pred_tabX %>% 
     mutate(prediction = exp(
-      b0 + (b1 * year_off_t) + (b3 * temp_t) +
-        (b5 * year_off_t * temp_t)),
+      b0 + (b1 * year) + (b3 * temp_t) +
+        (b5 * year * temp_t)),
       HWA = 'infest'
     )
   
   infes <- pred_tabX %>% 
     mutate(prediction = exp(
-      b0 + (b1 * year_off_t) + (b2 * infoff_t) + (b3 * temp_t) +
-        (b4 * year_off_t * infoff_t) + (b5 * year_off_t * temp_t) +
-        (b6 * infoff_t * temp_t) + (b7 * year_off_t * infoff_t * temp_t)),
+      b0 + (b1 * year) + (b2 * infoff_t) + (b3 * temp_t) +
+        (b4 * year * infoff_t) + (b5 * year * temp_t) +
+        (b6 * infoff_t * temp_t) + (b7 * year * infoff_t * temp_t)),
       HWA = 'no_infest'
     )
   
@@ -193,16 +193,16 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
   no_infesu <- no_infes %>% 
     mutate(predictionU = exp(
-      b0u + (b1u * year_off_t) + (b3u * temp_t) +
-        (b5u * year_off_t * temp_t)),
+      b0u + (b1u * year) + (b3u * temp_t) +
+        (b5u * year * temp_t)),
       HWA = 'infest'
     )
   
   infesu <- infes %>% 
     mutate(predictionU = exp(
-      b0u + (b1u * year_off_t) + (b2u * infoff_t) + (b3u * temp_t) +
-        (b4u * year_off_t * infoff_t) + (b5u * year_off_t * temp_t) +
-        (b6u * infoff_t * temp_t) + (b7u * year_off_t * infoff_t * temp_t)),
+      b0u + (b1u * year) + (b2u * infoff_t) + (b3u * temp_t) +
+        (b4u * year * infoff_t) + (b5u * year * temp_t) +
+        (b6u * infoff_t * temp_t) + (b7u * year * infoff_t * temp_t)),
       HWA = 'no_infest'
     )
   # low -----------------
@@ -217,16 +217,16 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
   no_infesl <- no_infes %>% 
     mutate(predictionL = exp(
-      b0l + (b1l * year_off_t) + (b3l * temp_t) +
-        (b5l * year_off_t * temp_t)),
+      b0l + (b1l * year) + (b3l * temp_t) +
+        (b5l * year * temp_t)),
       HWA = 'infest'
     )
   
   infesl <- infes %>% 
     mutate(predictionL = exp(
-      b0l + (b1l * year_off_t) + (b2l * infoff_t) + (b3l * temp_t) +
-        (b4l * year_off_t * infoff_t) + (b5l * year_off_t * temp_t) +
-        (b6l * infoff_t * temp_t) + (b7l * year_off_t * infoff_t * temp_t)),
+      b0l + (b1l * year) + (b2l * infoff_t) + (b3l * temp_t) +
+        (b4l * year * infoff_t) + (b5l * year * temp_t) +
+        (b6l * infoff_t * temp_t) + (b7l * year * infoff_t * temp_t)),
       HWA = 'no_infest'
     )
   
