@@ -1,5 +1,4 @@
-# run 6_model full model to compare recults with the sensitivity, permutation and 
-#   simulation analysis
+# 6_model full model to compare with the sensitivity analysis
 
 # Input: 
 #        /data/hexmap.graph
@@ -42,7 +41,7 @@ run_model <- function(offset, BIRDx, formula){
   print(nrow(BIRDx))
   print(sum(BIRDx$SpeciesTotal))
   
-  model <- inla(formula, family="poisson", data=BIRDx, 
+  model <- inla(formula1, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
                 control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   return(model)
