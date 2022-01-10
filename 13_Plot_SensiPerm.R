@@ -5,7 +5,7 @@ library(glue)
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 sps_list <- read_csv(SPECIES_DATA_PATH)
 
-# real ones with the full model
+# estimates of the full model -----------
 # source(13.5_plot_full_mod_dat)
 a1 <- read_rds(glue("data/models_res/{sps_list[1,]}/{sps_list[1,]}_fullmodel.rds"))
 s1 <- read_rds(glue("data/models_res/{sps_list[2,]}/{sps_list[2,]}_fullmodel.rds"))
@@ -193,24 +193,21 @@ r3 <- full_pred(r2)
 
 master_full <- rbind(a3,s3,c3,d3,e3,f3,g3,h3,k3,l3,m3,n3,o3,q3,r3)
 
-# sensitivity
+
+# sensitivity    -----------
 sensi_pro <- function(species) {
   COEF_PATH_SENSI <- glue("data/models_res/{species}/sensi/coefs_{species}.rds")
-  COEF_PATH <- glue("data/models_res/{species}/coefs_{species}.rds")
+  COEF_PATH <- glue("data/models_res/{species}/{species}_fullmodel.rds")
   
   plot_tib <- readRDS(COEF_PATH_SENSI)
   
   plot_tib2 <- readRDS(COEF_PATH)
-  plot_tib2$par2 <- c("B0", "B1", "B2", "B4", "B3", "B5", "B6", "B7")
-  for(i in 1:nrow(plot_tib2)){
-    if(is.na(plot_tib2$low[i])) {plot_tib2$low[i] <- 0}
-    if(is.na(plot_tib2$up[i])) {plot_tib2$up[i] <- 0}
-  }
+  plot_tib2 <- plot_tib2$summary.fixed
+  plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
   
-  plot_tib2 <- plot_tib2 %>% 
-    filter(!(value == 0))
-  
-  colnames(plot_tib2)[3:4] <- c("low1", "up1")
+  colnames(plot_tib2)[1] <- "value"
+  colnames(plot_tib2)[3] <- "low1"
+  colnames(plot_tib2)[5] <- "up1"
   
   ggplot(data = plot_tib, aes(x = par2, y = mean)) +
     #geom_jitter(col = "gray") +
@@ -221,8 +218,8 @@ sensi_pro <- function(species) {
           legend.position="none") +
     ylab("Estimates") +
     xlab("Coefficients") +
-    geom_point(data = plot_tib2, aes(x = par2, y = value)) +
-    geom_segment(data = plot_tib2, aes(x = par2, y = low1, xend = par2, yend = up1)) +
+    geom_point(data = plot_tib2, aes(x = par2, y = value), col = "red") +
+    geom_segment(data = plot_tib2, aes(x = par2, y = low1, xend = par2, yend = up1), col = "red") +
     ggtitle("Sensitivity Analysis")
   
   # pop change
@@ -235,6 +232,7 @@ sensi_pro <- function(species) {
     }
   }
   
+  # remove NA columns
   plot_tib_per$value <- NA
   
   for(i in 1:nrow(plot_tib_per)){
@@ -248,7 +246,8 @@ sensi_pro <- function(species) {
   
   # template for predictions
   preds <- readRDS(glue("data/preds/preds_{species}.rds")) %>% 
-    filter(year == 20)
+    filter(year == 20) %>% 
+    select(!( year_off_t))
   preds$prop <- preds$prediction <- NA
   preds$species <- as.character(species)
   
@@ -326,18 +325,17 @@ d <- sensi_pro(sps_list[4,])
 e <- sensi_pro(sps_list[5,])
 f <- sensi_pro(sps_list[7,])
 g <- sensi_pro(sps_list[8,])
-h <- sensi_pro(sps_list[9,]) #
-k <- sensi_pro(sps_list[10,]) #
+h <- sensi_pro(sps_list[9,]) 
+k <- sensi_pro(sps_list[10,])
 l <- sensi_pro(sps_list[11,])
-m <- sensi_pro(sps_list[12,]) #
-n <- sensi_pro(sps_list[13,]) #
-o <- sensi_pro(sps_list[14,]) #
+m <- sensi_pro(sps_list[12,])
+n <- sensi_pro(sps_list[13,])
+o <- sensi_pro(sps_list[14,]) 
 #p <- sensi_pro(sps_list[15,])
 q <- sensi_pro(sps_list[16,])
-r <- sensi_pro(sps_list[17,]) #
+r <- sensi_pro(sps_list[17,]) 
 
-master_pro <- rbind(a,b,c,d,e,f,g,h,l,m,n,o,q,r)
-#  master_pro <-rbind(a,b,c,d,e,f,g)
+master_pro <- rbind(a,b,c,d,e,f,g,h,k,l,m,n,o,q,r)
 
 master_full$temp2 <- NA
 for(i in 1:nrow(master_full)){
@@ -346,7 +344,23 @@ for(i in 1:nrow(master_full)){
   if(master_full$temp[i] == "t3") {master_full$temp2[i] <- "tt3" }
 }
 
-ggplot(data = master_pro, aes(y= species, x = prop)) +
+master_pro2 <- master_pro %>% 
+  select(RouteId, prop, species, temp) %>% 
+  unite(sps_temp, species:temp, remove = FALSE)
+
+temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>% 
+  rename(temp = V1,
+         orde = V2)
+
+master_pro2 <- left_join(master_pro2, temp_order, by = "temp") %>% 
+  arrange(orde)
+
+master_full2 <- left_join(master_full, temp_order, by = "temp") %>% 
+  arrange(orde) %>% 
+  arrange(species, temp) %>% 
+  unite(sps_temp, species:temp, remove = FALSE)
+
+ggplot(data = master_pro2, aes(y= sps_temp, x = prop)) +
   geom_vline(xintercept = 0,
              col = "gray43",
              linetype = "dotted",
@@ -363,10 +377,11 @@ ggplot(data = master_pro, aes(y= species, x = prop)) +
         #legend.box.margin=margin(-5,0,-5,-7),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        legend.title.align = 0.5) +
+        legend.title.align = 0.5,
+        plot.title = element_text(hjust = 0.5)) +
   #scale_x_continuous(breaks = seq(-3, 1, 0.5),
   #                   limits = c(-3, 1, 0.5)) +
-  geom_point(data = master_full, aes(y= species, x = prop,
+  geom_point(data = master_full2, aes(y= sps_temp, x = prop,
                                      shape = temp2, color = temp2), size = 3) +
   scale_shape_manual(values=c("tt1" = 21,
                               "tt2" = 24,
@@ -386,6 +401,269 @@ ggplot(data = master_pro, aes(y= species, x = prop)) +
                      labels = c("t1" = "0.2",
                                 "t2" = "0.5",
                                 "t3" = "0.8"),
-                     name = "Temperature\nQuantiles")
+                     name = "Temperature\nQuantiles") +
+  labs(title="Sensitivity analysis")
+
+# boxplot
+master_full3 <- master_full2 %>% 
+  mutate(tab = "full") %>% 
+  select(sps_temp, prop, orde, tab, temp, temp2, species)
+
+master_pro3 <- master_pro2 %>% 
+  mutate(tab = "pro", temp2 = NA) %>% 
+  select(sps_temp, prop, orde, tab, temp, temp2, species)
+
+master_pro_full <- rbind(master_full3, master_pro3) %>% 
+  group_by(sps_temp) %>%
+  mutate(across(contains("prop"),scale))
+
+master_full3 <- master_pro_full %>% 
+  filter(tab == "full")
+
+master_pro3 <- master_pro_full %>% 
+  filter(tab == "pro")
+
+ggplot(data = master_pro3, aes(y= sps_temp, x = prop)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  #geom_point(aes(shape = temp, color = temp), size = 2) +
+  geom_boxplot() + 
+  # facet_wrap(~temp) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5,
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
+  #                   limits = c(-3, 1, 0.5)) +
+  geom_point(data = master_full3, aes(y= sps_temp, x = prop,
+                                      shape = temp2, color = temp2), size = 3) +
+  scale_shape_manual(values=c("tt1" = 16,
+                              "tt2" = 17,
+                              "tt3" = 15)) +
+  scale_fill_manual(values=c("olivedrab4",
+                             "violetred",
+                             "darkorange3")) +
+  scale_color_manual(values = c("tt1" = "olivedrab3",
+                                "tt2" = "palevioletred2",
+                                "tt3" = "tan1"),
+                     labels = c("tt1" = "0.2",
+                                "tt2" = "0.5",
+                                "tt3" = "0.8"),
+                     name = "Temperature\nQuantiles") +
+  labs(title="Sensitivity analysis") +
+  coord_flip() 
+
+# permutation ----------
+pred_per_sps <- function(species){
+  TEMPQUANT_PATH <- glue("data/tempquant.csv")
+  COEF_PERM_PATH <- glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= "")
   
-# permutation
+  coefs <- read_rds(COEF_PERM_PATH)  
+  temp_qunts <- read_csv(TEMPQUANT_PATH)
+  
+  temp_qunts2 <- temp_qunts %>% 
+    as_tibble() %>% 
+    rename(Species = species, t1 = ...2, t2 = ...3, t3 = ...4) %>% 
+    dplyr::filter(trimws(Species) == trimws(species))
+    
+  coefs2 <- coefs %>%
+    select(par, mean) %>% 
+    group_by(par) %>%
+    mutate(row = row_number()) %>%
+    tidyr::pivot_wider(names_from = par, values_from = mean) %>%
+    select(-row)
+  
+  pmat <- coefs2 %>% 
+    mutate(temp1 = pull(temp_qunts2[ ,2]),
+           temp2 = pull(temp_qunts2[ ,3]),
+           temp3 = pull(temp_qunts2[ ,4]),
+           time = 20
+    )
+  
+  # estimates -----------
+  prop_tabX <- as_tibble(matrix(NA,nrow = nrow(pmat), ncol = 6))
+  colnames(prop_tabX) <- c("noinf1", "inf1", "noinf2", "inf2", "noinf3", "inf3")
+  
+  for (i in 1:nrow(prop_tabX)){
+    
+    ifelse(!is.na(pmat$intercept[i]), b0 <- pmat$intercept[i], b0 <- 0)
+    ifelse(!is.na(pmat$year_offset[i]), b1 <- pmat$year_offset[i], b1 <- 0)
+    ifelse(!is.na(pmat$infoff[i]), b2 <- pmat$infoff[i], b2 <- 0)
+    ifelse(!is.na(pmat$temp_min_scale[i]), b3 <- pmat$temp_min_scale[i], b3 <- 0)
+    ifelse(!is.na(pmat$year_offset.infoff[i]), b4 <- pmat$year_offset.infoff[i], b4 <- 0)
+    ifelse(!is.na(pmat$year_offset.temp_min_scale[i]), b5 <- pmat$year_offset.temp_min_scale[i], b5 <- 0)
+    ifelse(!is.na(pmat$infoff.temp_min_scale[i]), b6 <- pmat$infoff.temp_min_scale[i], b6 <- 0)
+    ifelse(!is.na(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- pmat$year_offset.infoff.temp_min_scale[i], b7 <- 0)
+    
+    no_infes <- pmat[i,] %>% 
+      mutate(prediction1 = exp(b0 + (b1 * time) + (b3 * temp1) + (b5 * year_offset * temp1)),
+             prediction2 = exp(b0 + (b1 * time) + (b3 * temp2) + (b5 * year_offset * temp2)),
+             prediction3 = exp(b0 + (b1 * time) + (b3 * temp3) + (b5 * year_offset * temp3)),
+             HWA = 'infest'
+      )
+    
+    infes <- pmat[i,] %>% 
+      mutate(prediction1 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp1) +
+                                 (b4 * time * infoff) + (b5 * time * temp1) +
+                                 (b6 * infoff * temp1) + (b7 * time * infoff * temp1)),
+             prediction2 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp2) +
+                                 (b4 * time * infoff) + (b5 * time * temp2) +
+                                 (b6 * infoff * temp2) + (b7 * time * infoff * temp2)),
+             prediction3 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp3) +
+                                 (b4 * time * infoff) + (b5 * time * temp3) +
+                                 (b6 * infoff * temp3) + (b7 * time * infoff * temp3)),
+             HWA = 'no_infest'
+      )
+    prop_tabX$noinf1[i] <- no_infes$prediction1
+    prop_tabX$inf1[i] <- infes$prediction1
+    prop_tabX$noinf2[i] <- no_infes$prediction2
+    prop_tabX$inf2[i] <- infes$prediction2
+    prop_tabX$noinf3[i] <- no_infes$prediction3
+    prop_tabX$inf3[i] <- infes$prediction3
+    rm(no_infes, infes,
+       b0, b1, b2, b3, b4, b5, b6, b7)
+  }
+  
+  prop_tabX <- prop_tabX %>% 
+    mutate(t1 = log(noinf1/inf1),
+           t2 = log(noinf2/inf2),
+           t3 = log(noinf3/inf3),
+           Species = species)
+  
+  prop_tabX2 <- prop_tabX %>% 
+    pivot_longer(`t1`:`t3`, names_to = "temp", values_to = "pop202") %>% 
+    select(Species, temp, pop202) %>% 
+    mutate(sps_temp = glue("{Species}_{temp}", remove = FALSE))
+  
+  temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>% 
+    rename(temp = V1,
+           orde = V2)
+  
+  prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>% 
+    arrange(orde)
+  
+  return(prop_tabX3)
+  
+}
+
+# add real estimate on top
+master_full_per <- master_full %>% 
+  mutate(sps_temp = glue("{species}_{temp}"),
+         temp2 = glue("t{temp}"))
+
+per1 <- pred_per_sps(trimws(sps_list[1,]))
+per2 <- pred_per_sps(trimws(sps_list[2,]))
+per3 <- pred_per_sps(trimws(sps_list[3,]))
+per4 <- pred_per_sps(trimws(sps_list[4,]))
+per5 <- pred_per_sps(trimws(sps_list[5,]))
+#6
+per7 <- pred_per_sps(trimws(sps_list[7,]))
+per8 <- pred_per_sps(trimws(sps_list[8,]))
+per9 <- pred_per_sps(trimws(sps_list[9,]))
+per10 <- pred_per_sps(trimws(sps_list[10,]))
+per11 <- pred_per_sps(trimws(sps_list[11,]))
+per12 <- pred_per_sps(trimws(sps_list[12,]))
+per13 <- pred_per_sps(trimws(sps_list[13,]))
+per14 <- pred_per_sps(trimws(sps_list[14,]))
+#per15 <- pred_per_sps(trimws(sps_list[15,]))
+per16 <- pred_per_sps(trimws(sps_list[16,]))
+per17 <- pred_per_sps(trimws(sps_list[17,]))
+
+prop_tabX3 <- rbind(per1, per2, per3, per4, per5, per7, per8, per9, 
+                    per10, per11, per12, per13, per14, per16, per17) %>% 
+  arrange(match(Species, master_full2$sps_temp)) %>% 
+  mutate(orde = seq(1:nrow(prop_tabX3)))
+
+(pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
+    geom_point(aes(shape = temp), colour = "grey", size = 2) +
+    geom_vline(xintercept = 0,
+               col = "gray43",
+               linetype = "dotted",
+               size = 1) +
+    geom_point(data = master_full_per, 
+               aes(y = sps_temp, x = prop,
+                   shape = temp), colour = "black", size = 2) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          #legend.title = element_blank(),
+          legend.position = "right",
+          legend.justification = "right",
+          #legend.margin=margin(0,0,0,0),
+          #legend.box.margin=margin(-5,0,-5,-7),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.title.align = 0.5) +
+    scale_x_continuous(breaks = seq(-3, 1, 0.5),
+                       limits = c(-3, 1, 0.5)) +
+    scale_color_manual(values = c("t1" = "blue4",
+                                  "t2" = "violetred",
+                                  "t3" = "darkorange3"),
+                       labels = c("t1" = "0.2",
+                                  "t2" = "0.5",
+                                  "t3" = "0.8"),
+                       name = "Temperature\nQuantiles")) +
+  ggtitle("Permutation")
+
+
+ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  #geom_point(aes(shape = temp, color = temp), size = 2) +
+  geom_boxplot() + 
+  # facet_wrap(~temp) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5,
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
+  #                   limits = c(-3, 1, 0.5)) +
+  geom_point(data = master_full_per, aes(y = sps_temp, x = prop,
+                                      shape = temp2, color = temp2
+                                      ), size = 3) +
+  scale_shape_manual(values=c("tt1" = 16,
+                              "tt2" = 17,
+                              "tt3" = 15)) +
+  scale_fill_manual(values=c("olivedrab4",
+                             "violetred",
+                             "darkorange3")) +
+  scale_color_manual(values = c("tt1" = "olivedrab3",
+                                "tt2" = "palevioletred2",
+                                "tt3" = "tan1"),
+                     labels = c("tt1" = "0.2",
+                                "tt2" = "0.5",
+                                "tt3" = "0.8"),
+                     name = "Temperature\nQuantiles") +
+  labs(title="Permutation analysis") +
+  coord_flip() +
+  scale_y_discrete(limits=rev)
+
+
+
+
+
+
+
