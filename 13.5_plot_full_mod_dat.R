@@ -1,4 +1,5 @@
-# 6_model
+# run 6_model full model to compare recults with the sensitivity, permutation and 
+#   simulation analysis
 
 # Input: 
 #        /data/hexmap.graph
@@ -16,14 +17,15 @@ library(glue)
 set.seed(10)
 
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
-source("5_formulasModels.R")
+source("~/Documents/GitHub/BirdHWA/5_formulasModels.R")
 sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 
 offsets <- seq(2,16,1)
 
 run_model <- function(offset, BIRDx, formula){
-   ## Create an year offset for that species ------------------  
+  ## Create an year offset for that species ------------------  
+  offset <- off
   BIRDx <- BIRDx %>%  
     # remove 20 ears before and after infestation
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
@@ -39,26 +41,19 @@ run_model <- function(offset, BIRDx, formula){
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
   print(nrow(BIRDx))
   print(sum(BIRDx$SpeciesTotal))
-
-  model <- inla(formula, 
-                #family="poisson",
-                family = "zeroinflatedpoisson0",
-                #family = "zeroinflatedpoisson1",
-                data=BIRDx, 
+  
+  model <- inla(formula, family="poisson", data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
                 control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   return(model)
 }
 
-run_combinations <- function(species){
-  for(i in 1:length(formulas)){
-    formula <- formulas[[i]]
-    for(j in 1:length(offsets)){
-      off <- offsets[j]
+run_full <- function(species){
+      off <- 1
       SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
       BIRDtab <- readRDS(SPECIES_MOD_DAT)
-      resu <- run_model(off, BIRDtab, formula)
-      name <- glue("{species}_model{i}_{off}yrs")
+      resu <- run_model(off, BIRDtab, formula1)
+      name <- glue("{species}_fullmodel")
       assign(name,resu)
       print(name)
       name2 <- glue("data/models_res/{species}/{name}.rds", sep= "")
@@ -66,11 +61,9 @@ run_combinations <- function(species){
       saveRDS(object = get(name), file = name2)
       rm(resu)
       rm(BIRDtab)
-    }
-  }
 }
 
-lapply(sps_list$SpeciesCode, run_combinations)
+lapply(sps_list$SpeciesCode, run_full)
 
 
 

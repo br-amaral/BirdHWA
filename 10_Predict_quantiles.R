@@ -1,3 +1,12 @@
+# Predict quantiles
+# Input: summary_results file for each species
+# Output: plot of temperature distribution
+#         plot of predictions of temperature quadrants
+#         table with species predictions (preds_{species}.rds)
+#         table with species coefficients (coefs_{species}.rds)
+# WARNING: can't run everything at once, because 'maxi' (upper limit of prediction plots) varies according
+#            to species in different temperatures. has to be added manually once you look at the results
+
 library(tidyverse)
 library(gridExtra)
 library(glue)
@@ -256,8 +265,8 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
     scale_x_continuous(breaks = c(-10,-5,0,5,10,15,20)) +
     ylim(0, max) +
     scale_colour_manual("legend",
-                      values = c("no_infest" = "gray82", "infest" = "gray28"),
-                      labels = c("Not infested", "Infested"))
+                        values = c("no_infest" = "gray82", "infest" = "gray28"),
+                        labels = c("Not infested", "Infested"))
   # confidence interval
   #geom_line(aes(x = year, y = predictionL, col = HWA), data = plot_preds) +
   #geom_line(aes(x = year, y = predictionU, col = HWA), data = plot_preds)
@@ -278,6 +287,5 @@ unique(BIRDtab$min_tempMe)/100
 unique(BIRDtab$sd_tempMi)/100
 
 quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
-
 
 
