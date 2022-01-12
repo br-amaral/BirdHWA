@@ -48,7 +48,7 @@ run_model <- function(offset, BIRDx, formula){
   return(model)
 }
 
-run_combinations <- function(species){
+run_full <- function(species){
       off <- 1
       SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
       BIRDtab <- readRDS(SPECIES_MOD_DAT)
@@ -63,7 +63,7 @@ run_combinations <- function(species){
       rm(BIRDtab)
 }
 
-lapply(sps_list$SpeciesCode, run_combinations)
+lapply(sps_list$SpeciesCode, run_full)
 
 
 
