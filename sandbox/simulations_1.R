@@ -7,11 +7,8 @@ library(glue)
 library(gridExtra)
 
 ## Simulate bird numbers with existing covariate data -------------------------------
-modres <- readRDS("R:/work/Aug5_run_models_control/data/models_res/HETH/HETH_model1_2yrs.rds")
-modres <- readRDS("~/Documents/HETH_model1_2yrs.rds")
-
-BIRDtab <- read_rds("C:/Users/bzr69/OneDrive - The Pennsylvania State University/Aug5_run_models_control/data/species/HETH.rds")
-BIRDtab <- read_rds("~/Documents/HETH.rds")
+modres <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/HETH/HETH_fullmodel.rds")
+BIRDtab <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/species/HETH.rds")
 
 reps <- 1000
 
@@ -19,13 +16,13 @@ reps <- 1000
 b0 <- modres$summary.fixed$mean[1]
 b1 <- modres$summary.fixed$mean[2]        # year_offset
 b2 <- modres$summary.fixed$mean[3]        # infoff
-b3 <- modres$summary.fixed$mean[4]        # NewObserver
+b8 <- modres$summary.fixed$mean[4]        # NewObserver
 b4 <- modres$summary.fixed$mean[5]        # temp_min_scale
 # add interaction
-b5 <- modres$summary.fixed$mean[6]        # year_offset:infoff  
-b6 <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
-b7 <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
-b8 <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
+b3 <- modres$summary.fixed$mean[6]        # year_offset:infoff  
+b5 <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
+b6 <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
+b7 <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
 
 offset <- 2
 
@@ -76,18 +73,14 @@ lambda <- exp(b0 + X2 %*% betas +
                 Z1 %*% g1 +    #X$ObserverRoute
                 Z2 %*% g2 +    #X$Year
                 Z3 %*% g3
-)
+              )
 
-y <- rpois(length(lambda),lambda)
 
-hist(y)
-hist(BIRDtab$SpeciesTotal)
+#hist(y)
+#hist(BIRDtab$SpeciesTotal)
 
 X3 <- cbind(as.data.frame(X2), X$ObserverRoute, X$Year, X$hexID)
 colnames(X3)[9:11] <- c("ObserverRoute", "Year", "hexID")
-
-BIRDx <- cbind(y, X3)
-colnames(BIRDx)[1] <- "SpeciesTotal"
 
 formula1 <- SpeciesTotal ~ 1 + 
   year_offset + 
@@ -102,41 +95,28 @@ formula1 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-hex.adj <- paste0("~/Documents/hexmap.graph")
-hex.adj <- paste0("C:/Users/bzr69/OneDrive - The Pennsylvania State University/Aug5_run_models_control/data/hexmap.graph")
+hex.adj <- paste0("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/hexmap.graph")
 
-m1in <- inla(formula1, family="poisson", data=BIRDx, 
-             control.predictor=list(compute=TRUE), 
-             control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
-
-final <- cbind(c(b0, betas), modres$summary.fixed$`0.025quant`, modres$summary.fixed$`0.975quant`,
-               m1in$summary.fixed$mean, m1in$summary.fixed$`0.025quant`, m1in$summary.fixed$`0.975quant`) 
+final <- cbind(c(b0, betas), modres$summary.fixed$`0.025quant`, modres$summary.fixed$`0.975quant`) 
 final <- as.tibble(final)
-colnames(final) <- c("esti","estiLO", "estiUP", "simu", "simuLO", "simuUP")
+colnames(final) <- c("esti","estiLO", "estiUP")
 
-ggplot(aes(x = esti, y = simu), data = final) +
-  geom_abline(intercept = 0, slope = 1, colour = "gray") +
-  geom_point(size = 2) +
-  theme_bw() +
-  geom_errorbar(aes(xmax = simuLO,
-                    xmin = simuUP),
-                height = .1, size = 0.5) +
-  geom_errorbarh(aes(xmax = estiLO,
-                     xmin = estiUP),
-                 height = .1, size = 0.5,
-                 data = final[,1:3]) 
-
-final2 <- as_tibble(matrix(NA, nrow = nrow(final), ncol = reps + 3))
-final2[,1] <- modres$summary.fixed$mean
-final2[,2] <- modres$summary.fixed$`0.025quant`
-final2[,3] <- modres$summary.fixed$`0.975quant`
+final2 <- as_tibble(matrix(NA, nrow = nrow(final), ncol = reps))
 
 for(i in 1:reps){
+  
+  y <- rpois(length(lambda),lambda)
+  BIRDx <- cbind(y, X3)
+  colnames(BIRDx)[1] <- "SpeciesTotal"
+  
   m1in <- inla(formula1, family="poisson", data=BIRDx, 
                control.predictor=list(compute=TRUE), 
                control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   
-  final2[,i+3] <- m1in$summary.fixed$mean
+  final2[,i] <- m1in$summary.fixed$mean
+  if(i > 1){BIRDx2 <- rbind(BIRDx2,BIRDx)} else {
+    BIRDx2 <- BIRDx
+  }
   rm(m1in)
   print(i)
   
@@ -144,70 +124,71 @@ for(i in 1:reps){
 
 final2 <- cbind(final2, c("b0", "b1", "b2", "b3", "b4", "b5", 
                           "b6", "b7", "b8"))
-colnames(final2)[reps+4] <- "coef"
+colnames(final2)[reps+1] <- "coef"
 
-b0_si <- final2[1,-(reps+4)]%>% 
+b0_si <- final2[1,-(reps+1)]%>% 
   t() %>% 
   as_tibble() %>% 
   mutate(coe = "b0") %>% 
   rename(coefval = `1`) %>% 
   slice(-c(1,2,3))
 
-b1_si <- final2[2,-(reps+4)] %>% 
+b1_si <- final2[2,-(reps+1)] %>% 
   t() %>% 
   as_tibble() %>% 
   mutate(coe = "b1") %>% 
   rename(coefval = `2`) %>% 
   slice(-c(1,2,3))
 
-b2_si <- final2[3,-(reps+4)]%>% 
+b2_si <- final2[3,-(reps+1)]%>% 
   t() %>% 
   as_tibble() %>% 
   mutate(coe = "b2") %>% 
   rename(coefval = `3`) %>% 
   slice(-c(1,2,3))
 
-b3_si <- final2[4,-(reps+4)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b3") %>% 
-  rename(coefval = `4`) %>% 
-  slice(-c(1,2,3))
-
-b4_si <- final2[5,-(reps+4)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b4") %>% 
-  rename(coefval = `5`) %>% 
-  slice(-c(1,2,3))
-
-b5_si <- final2[6,-(reps+4)]%>% 
+b3_si <- final2[6,-(reps+1)]%>% 
   t() %>% 
   as_tibble() %>% 
   mutate(coe = "b5") %>% 
   rename(coefval = `6`) %>% 
   slice(-c(1,2,3))
 
-b6_si <- final2[7,-(reps+4)]%>% 
+b4_si <- final2[5,-(reps+1)]%>% 
   t() %>% 
   as_tibble() %>% 
-  mutate(coe = "b6") %>% 
-  rename(coefval = `7`) %>% 
+  mutate(coe = "b4") %>% 
+  rename(coefval = `5`) %>% 
   slice(-c(1,2,3))
 
-b7_si <- final2[8,-(reps+4)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b7") %>% 
-  rename(coefval = `8`) %>% 
-  slice(-c(1,2,3))
-
-b8_si <- final2[9,-(reps+4)]%>% 
+b5_si <- final2[7,-(reps+1)]%>% 
   t() %>% 
   as_tibble() %>% 
   mutate(coe = "b8") %>% 
+  rename(coefval = `7`) %>% 
+  slice(-c(1,2,3))
+
+b6_si <- final2[8,-(reps+1)]%>% 
+  t() %>% 
+  as_tibble() %>% 
+  mutate(coe = "b6") %>% 
+  rename(coefval = `8`) %>% 
+  slice(-c(1,2,3))
+
+b7_si <- final2[9,-(reps+1)]%>% 
+  t() %>% 
+  as_tibble() %>% 
+  mutate(coe = "b7") %>% 
   rename(coefval = `9`) %>% 
   slice(-c(1,2,3))
+
+b8_si <- final2[4,-(reps+1)]%>% 
+  t() %>% 
+  as_tibble() %>% 
+  mutate(coe = "b3") %>% 
+  rename(coefval = `4`) %>% 
+  slice(-c(1,2,3))
+
 
 bs_si <- rbind(b0_si, b1_si, b2_si, b3_si, b4_si,
                b5_si, b6_si, b7_si, b8_si)
@@ -224,9 +205,9 @@ final_props <- as_tibble(matrix(NA, nrow = 9, ncol = reps)) %>%
 for(k in 1:nrow(final_props)){
   for(l in 1:ncol(final_props)){
     
-    if(is.na(final2[k,l + 3])) {final_props[k,l] <- 0} else {
+    if(is.na(final2[k,l])) {final_props[k,l] <- 0} else {
       
-      if(between(final2[k,l + 3], final2[k,2], final2[k,3]) ) {
+      if(between(final2[k,l], final[k,2], final[k,3]) ) {
         final_props[k,l] <- 1} else {final_props[k,l] <- 0}
     }
   }
@@ -248,22 +229,18 @@ coeflabs <- c(glue("intercept\n{final_props2[1]}"),
               glue("infoff\ntemp_min\n{final_props2[8]}"),
               glue("year_offset\ninfoff\ntemp_min\n{final_props2[9]}"))
 
+final$par <- c("b0", "b1", "b2", "b3", "b4", "b5", 
+                      "b6", "b7", "b8")
 ggplot() +
-  geom_linerange(data = final2, 
-                 mapping = aes(x = coef,
-                               ymin = V2, ymax = V3,
+  geom_linerange(data = final, 
+                 mapping = aes(x = par, y = esti,
+                               ymin = estiLO, ymax = estiUP,
                                lwd = 6),
                  color = "grey", alpha = 0.7, size = 12) +
-  scale_y_continuous(limits=c(min(final2[,-(reps+4)]),
-                              max(final2[,-(reps+4)]))) +
-  geom_crossbar(data = final2, 
-                aes(ymin = V1 , ymax = V1,
-                    x = coef, y = V1),
-                size = 0.1, col="black", width = .5) +
-  geom_crossbar(data = betas2, 
-                aes(ymin = value , ymax = value,
-                    x = coef, y = value),
-                size = 0.1, col="red", width = .5, linetype = "dotted") +
+  geom_crossbar(data = final, mapping = aes(x = par, y = esti, 
+                                            ymin = esti , ymax = esti)) +
+  #scale_y_continuous(limits=c(min(final2[,-(reps+1)]),
+  #                            max(final2[,-(reps+1)]))) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position="none",
@@ -302,3 +279,58 @@ b <- ggplot(data = BIRDtab, aes(x = SpeciesTotal)) +
   geom_vline(xintercept = t3d, size=0.5, color = "black")
 
 grid.arrange(a, b, nrow=2)
+
+
+
+sps_preds <- readRDS("data/preds/preds_HETH.rds") %>% 
+  mutate(species = "HETH",
+         prediction = NA) 
+
+for(i in 1:nrow(sps_preds)){
+  if(sps_preds$HWA == "no_infest") {
+  sps_preds$prediction[i] <- exp(
+        b0 + (b1 * sps_preds$year_off_t) + (b3 * sps_preds$temp_t) +
+          (b5 * sps_preds$year_off_t * sps_preds$temp_t))
+  }
+  if(sps_preds$HWA == "infest") {
+    sps_preds$prediction[i] <- 
+  }
+}
+
+sps_preds2 <- sps_preds %>% 
+  filter(year == 20)
+sps_preds2$prop <- NA
+
+for(i in seq(from=1, to=nrow(sps_preds2), by=2)) {
+  sps_preds2$prop[i] <- sps_preds2$prop[i+1] <- log(sps_preds2$prediction[i]/sps_preds2$prediction[i+1])
+}
+
+sps_preds3 <- sps_preds2 %>% 
+  filter(HWA == "infest")   ## get only a copy from prop
+
+ggplot(data = sps_preds3, aes(y= species, x = prop)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 1) +
+  geom_point(aes(shape = temp, color = temp), size = 2) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5) +
+  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
+  #                   limits = c(-3, 1, 0.5)) +
+  scale_color_manual(values = c("t1" = "blue4",
+                                "t2" = "violetred",
+                                "t3" = "darkorange3"),
+                     labels = c("t1" = "0.2",
+                                "t2" = "0.5",
+                                "t3" = "0.8"),
+                     name = "Temperature\nQuantiles")
