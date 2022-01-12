@@ -6,23 +6,25 @@ library(INLA)
 library(glue)
 library(gridExtra)
 
+species <- "HETH"
+
 ## Simulate bird numbers with existing covariate data -------------------------------
-modres <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/HETH/HETH_fullmodel.rds")
-BIRDtab <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/species/HETH.rds")
+modres <- readRDS(glue("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/{species}/{species}_fullmodel.rds"))
+BIRDtab <- readRDS(glue("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/species/{species}.rds"))
 
 reps <- 1000
 
 # fixed
-b0 <- modres$summary.fixed$mean[1]
-b1 <- modres$summary.fixed$mean[2]        # year_offset
-b2 <- modres$summary.fixed$mean[3]        # infoff
-b8 <- modres$summary.fixed$mean[4]        # NewObserver
-b4 <- modres$summary.fixed$mean[5]        # temp_min_scale
+b0 <- b0r <- modres$summary.fixed$mean[1]
+b1 <- b1r <- modres$summary.fixed$mean[2]        # year_offset
+b2 <- b2r <- modres$summary.fixed$mean[3]        # infoff
+b8 <- b8r <- modres$summary.fixed$mean[4]        # NewObserver
+b4 <- b4r <- modres$summary.fixed$mean[5]        # temp_min_scale
 # add interaction
-b3 <- modres$summary.fixed$mean[6]        # year_offset:infoff  
-b5 <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
-b6 <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
-b7 <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
+b3 <- b3r <- modres$summary.fixed$mean[6]        # year_offset:infoff  
+b5 <- b5r <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
+b6 <- b6r <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
+b7 <- b7r <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
 
 offset <- 2
 
@@ -122,8 +124,8 @@ for(i in 1:reps){
   
 }
 
-final2 <- cbind(final2, c("b0", "b1", "b2", "b3", "b4", "b5", 
-                          "b6", "b7", "b8"))
+final2 <- cbind(final2, c("b0", "b1", "b2", "b8", "b4", 
+                          "b3", "b5", "b6", "b7"))
 colnames(final2)[reps+1] <- "coef"
 
 b0_si <- final2[1,-(reps+1)]%>% 
@@ -239,8 +241,6 @@ ggplot() +
                  color = "grey", alpha = 0.7, size = 12) +
   geom_crossbar(data = final, mapping = aes(x = par, y = esti, 
                                             ymin = esti , ymax = esti)) +
-  #scale_y_continuous(limits=c(min(final2[,-(reps+1)]),
-  #                            max(final2[,-(reps+1)]))) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position="none",
@@ -254,61 +254,79 @@ ggplot() +
   scale_x_discrete(labels= coeflabs)  
 
 
+sps_preds <- readRDS(glue("data/preds/preds_{species}.rds")) %>% 
+  mutate(species = species,
+         prediction = NA) %>% 
+  filter(year == 20)
 
-t1s <- quantile(BIRDx$SpeciesTotal, c(0.2, 0.5, 0.8))[1]
-t2s <- quantile(BIRDx$SpeciesTotal, c(0.2, 0.5, 0.8))[2]
-t3s <- quantile(BIRDx$SpeciesTotal, c(0.2, 0.5, 0.8))[3]
+sps_preds_real <- sps_preds
 
-t1d <- quantile(BIRDtab$SpeciesTotal, c(0.2, 0.5, 0.8))[1]
-t2d <- quantile(BIRDtab$SpeciesTotal, c(0.2, 0.5, 0.8))[2]
-t3d <- quantile(BIRDtab$SpeciesTotal, c(0.2, 0.5, 0.8))[3]
+sps_preds <- do.call(rbind, replicate(reps, sps_preds, simplify=FALSE))
 
+props <- matrix(NA, nrow = reps, ncol = 3)
+colnames(props) <- c("t1","t2","t3")
+final2 <- final2 %>% 
+  arrange(coef)
 
-a <- ggplot(data = BIRDx, aes(x = SpeciesTotal)) +
-  geom_histogram() +
-  theme_bw() +
-  geom_vline(xintercept = t1s, size=0.5, color = "black") +
-  geom_vline(xintercept = t2s, size=0.5, color = "black") +
-  geom_vline(xintercept = t3s, size=0.5, color = "black")
+sps_preds$loop <- NA
 
-b <- ggplot(data = BIRDtab, aes(x = SpeciesTotal)) +
-  geom_histogram() +
-  theme_bw() +
-  geom_vline(xintercept = t1d, size=0.5, color = "black") +
-  geom_vline(xintercept = t2d, size=0.5, color = "black") +
-  geom_vline(xintercept = t3d, size=0.5, color = "black")
+k <- i <- j <- 1
+for(j in 1:reps){
+  print(j)
+ 
+      b0 <- final3[1,j]; b1 <- final3[2,j]; b2 <- final3[3,j]; b3 <- final3[4,j]; b4 <- final3[5,j]
+      b5 <- final3[6,j]; b6 <- final3[7,j]; b7 <- final3[8,j]; b8 <- final3[9,j]
 
-grid.arrange(a, b, nrow=2)
+      for(k in i:(i+5)) {
+        if(sps_preds$HWA[k] == "no_infest") {
+        sps_preds$prediction[k] <- exp(
+              b0 + (b1 * sps_preds$year_off_t[k]) + (b3 * sps_preds$temp_t[k]) +
+                (b5 * sps_preds$year_off_t[k] * sps_preds$temp_t[k]))
+        }
+        if(sps_preds$HWA[k] == "infest") {
+          sps_preds$prediction[k] <- exp(
+            b0 + (b1 * sps_preds$year_off_t[k]) + (b2 * sps_preds$infoff_t[k]) + (b3 * sps_preds$temp_t[k]) +
+              (b4 * sps_preds$year_off_t[k] * sps_preds$infoff_t[k]) + (b5 * sps_preds$year_off_t[k] * sps_preds$temp_t[k]) +
+              (b6 * sps_preds$infoff_t[k] * sps_preds$temp_t[k]) + (b7 * sps_preds$year_off_t[k] * sps_preds$infoff_t[k] * sps_preds$temp_t[k]))
+        }
+      }
+      sps_preds$loop[i] <- b0
+      i <- i + 6
+}
 
+sps_preds$prop <- NA
 
-
-sps_preds <- readRDS("data/preds/preds_HETH.rds") %>% 
-  mutate(species = "HETH",
-         prediction = NA) 
-
-for(i in 1:nrow(sps_preds)){
-  if(sps_preds$HWA == "no_infest") {
-  sps_preds$prediction[i] <- exp(
-        b0 + (b1 * sps_preds$year_off_t) + (b3 * sps_preds$temp_t) +
-          (b5 * sps_preds$year_off_t * sps_preds$temp_t))
-  }
-  if(sps_preds$HWA == "infest") {
-    sps_preds$prediction[i] <- 
-  }
+for(i in seq(from=1, to=nrow(sps_preds), by=2)) {
+  sps_preds$prop[i] <- sps_preds$prop[i+1] <- log(sps_preds$prediction[i+1]/sps_preds$prediction[i])
 }
 
 sps_preds2 <- sps_preds %>% 
-  filter(year == 20)
-sps_preds2$prop <- NA
+  filter(HWA == "infest") %>%    ## get only a copy from prop
+  select(-loop)
 
-for(i in seq(from=1, to=nrow(sps_preds2), by=2)) {
-  sps_preds2$prop[i] <- sps_preds2$prop[i+1] <- log(sps_preds2$prediction[i]/sps_preds2$prediction[i+1])
+for(k in 1:6) {
+  if(sps_preds_real$HWA[k] == "no_infest") {
+    sps_preds_real$prediction[k] <- exp(
+      b0r + (b1r * sps_preds_real$year_off_t[k]) + (b3r * sps_preds_real$temp_t[k]) +
+        (b5r * sps_preds_real$year_off_t[k] * sps_preds_real$temp_t[k]))
+  }
+  if(sps_preds_real$HWA[k] == "infest") {
+    sps_preds_real$prediction[k] <- exp(
+      b0 + (b1r * sps_preds_real$year_off_t[k]) + (b2r * sps_preds_real$infoff_t[k]) + (b3r * sps_preds_real$temp_t[k]) +
+        (b4r * sps_preds_real$year_off_t[k] * sps_preds_real$infoff_t[k]) + (b5r * sps_preds_real$year_off_t[k] * sps_preds_real$temp_t[k]) +
+        (b6r * sps_preds_real$infoff_t[k] * sps_preds_real$temp_t[k]) + (b7r * sps_preds_real$year_off_t[k] * sps_preds_real$infoff_t[k] * sps_preds_real$temp_t[k]))
+  }
 }
 
-sps_preds3 <- sps_preds2 %>% 
-  filter(HWA == "infest")   ## get only a copy from prop
+sps_preds_real$prop <- NA
+for(i in seq(from=1, to=nrow(sps_preds_real), by=2)) {
+  sps_preds_real$prop[i] <- sps_preds_real$prop[i+1] <- log(sps_preds_real$prediction[i+1]/sps_preds_real$prediction[i])
+}
 
-ggplot(data = sps_preds3, aes(y= species, x = prop)) +
+sps_preds_real <- sps_preds_real %>% 
+  filter(HWA == "infest")
+
+ggplot(data = sps_preds2, aes(y= species, x = prop)) +
   geom_vline(xintercept = 0,
              col = "gray43",
              linetype = "dotted",
@@ -333,4 +351,8 @@ ggplot(data = sps_preds3, aes(y= species, x = prop)) +
                      labels = c("t1" = "0.2",
                                 "t2" = "0.5",
                                 "t3" = "0.8"),
-                     name = "Temperature\nQuantiles")
+                     name = "Temperature\nQuantiles") + 
+  facet_wrap(~temp, nrow = 3) +
+  geom_point(aes(shape = temp, color = temp), size = 2) +
+  geom_point(data = sps_preds_real, aes(y= species, x = prop))
+
