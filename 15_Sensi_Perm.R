@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-# species <- "BHVI"
+#species <- "HETH"
 offsets <- 2
 mod <- 1
 
@@ -27,7 +27,7 @@ hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
 create_data <- function(offset2, BIRDx) {
-  ## Create an year offset for that species ------------------  
+  # Create an year offset for that species 
   BIRDx2 <- BIRDx %>%  
     # remove 20 ears before and after infestation
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
@@ -48,7 +48,13 @@ create_data <- function(offset2, BIRDx) {
 # function to randomize infestation year
 permute_data <- function(offset2, BIRDy){
   
-  ## permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
+  # permute years, group by route
+  BIRDy <- BIRDy %>% 
+    group_by(RouteId) %>% 
+    mutate(yr_shuf = sample(Year)) %>% 
+    ungroup()
+  
+  #permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
   # find out how many routes first infested in each calendar year
   yr_inf <- table(BIRDy$RouteId, BIRDy$YearInfested) %>% 
     as.data.frame.matrix() %>% 
@@ -89,7 +95,11 @@ permute_data <- function(offset2, BIRDy){
            Infested = replace(Infested, !is.finite(Infested), 0),
            yrhwa = replace(yrhwa, !is.finite(yrhwa), 0))
   
-  ## Create an year offset for that species ------------------  
+  # permute temperatures
+  
+  BIRDy3$temp_min_scale <- sample(BIRDy3$temp_min_scale)
+  
+  # Create an year offset for that species 
   BIRDy4 <- BIRDy3 %>%  
     # remove 20 ears before and after infestation
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
@@ -262,6 +272,20 @@ run_perm <- function(species, perm, offsets) {
     infoff.temp_min_scale[i,1:3] <- coefs["infoff:temp_min_scale",]
     year_offset.infoff.temp_min_scale[i,1:3] <- coefs["year_offset:infoff:temp_min_scale",]
     
+    premperm <- list(intercept,
+                     year_offset,
+                     infoff,
+                     NewObserver,
+                     temp_min_scale,
+                     year_offset.infoff,
+                     year_offset.temp_min_scale,
+                     infoff.temp_min_scale
+    )
+    
+    name3 <- glue("data/models_res/{species}/perm/premperm.rds")
+    
+    write_rds(premperm, file = name3)
+    
     #saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
@@ -316,10 +340,16 @@ run_perm <- function(species, perm, offsets) {
     ggtitle("Permutation Analysis")
   
   saveRDS(plot_tib, file = glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= ""))  
-  saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
+  #saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
   
 }
 
 # run_sensi(species = species, offsets = 2)
-# run_perm(species = species, perm = 100, offsets = 2)
+for(i in 1:nrow(sps_list)){
+  
+  species <- sps_list[i,]
+  
+  run_perm(species = species, perm = 250, offsets = 2)
+  
+}
 
