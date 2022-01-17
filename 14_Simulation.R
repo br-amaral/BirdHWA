@@ -7,26 +7,26 @@ library(glue)
 library(gridExtra)
 
 species <- "HETH"
+sims <- 1000
+offset <- 2
 
 ## Simulate bird numbers with existing covariate data -------------------------------
-modres <- readRDS(glue("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/{species}/{species}_fullmodel.rds"))
-BIRDtab <- readRDS(glue("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/species/{species}.rds"))
+BIRDtab <- readRDS(glue("data/species/{species}.rds"))
 
-reps <- 1000
+formula1 <- SpeciesTotal ~ 1 + 
+  year_offset + 
+  infoff +
+  year_offset : infoff +
+  NewObserver +
+  temp_min_scale +
+  temp_min_scale : year_offset +
+  temp_min_scale : infoff +
+  temp_min_scale : infoff : year_offset +
+  f(ObserverRoute, model="iid") + 
+  f(Year, model="iid") +
+  f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-# fixed
-b0 <- b0r <- modres$summary.fixed$mean[1]
-b1 <- b1r <- modres$summary.fixed$mean[2]        # year_offset
-b2 <- b2r <- modres$summary.fixed$mean[3]        # infoff
-b8 <- b8r <- modres$summary.fixed$mean[4]        # NewObserver
-b4 <- b4r <- modres$summary.fixed$mean[5]        # temp_min_scale
-# add interaction
-b3 <- b3r <- modres$summary.fixed$mean[6]        # year_offset:infoff  
-b5 <- b5r <- modres$summary.fixed$mean[7]        # year_offset:temp_min_scale 
-b6 <- b6r <- modres$summary.fixed$mean[8]        # infoff:temp_min_scale   
-b7 <- b7r <- modres$summary.fixed$mean[9]        # year_offset:infoff:temp_min_scale
-
-offset <- 2
+hex.adj <- paste0("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/hexmap.graph")
 
 X <- BIRDtab %>%  
   # remove 20 ears before and after infestation
@@ -44,6 +44,39 @@ X <- BIRDtab %>%
          ObserverRoute = as.character(ObserverRoute),
          temp_min_scale = as.numeric(temp_min_scale)
   ) 
+
+intercept <- matrix(NA, nrow = sims + 1, ncol = 3) %>%
+  as_tibble()
+
+colnames(intercept) <- c("mean", "low", "up")
+
+intercept <- intercept %>% 
+  mutate(mean = as.numeric(mean),
+         low = as.numeric(low),
+         up = as.numeric(up))
+intercept <- as.data.frame(intercept)
+intercept[1,] <- NA
+intercept[1,1] <- 'real'
+
+year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
+  year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
+
+modres <- inla(formula1, family="poisson", data=X, 
+             control.predictor=list(compute=TRUE), 
+             control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
+
+coefsf <- modres$summary.fixed[,c(1,3,5)]
+
+intercept[1,2:4] <- b0 <- coefsf["(Intercept)",]
+year_offset[ 1,2:4] <- b1 <- coefsf["year_offset",]
+infoff[1,2:4] <- b2 <- coefsf["infoff",]
+NewObserver[1,2:4] <- b8 <- coefsf["NewObserverTRUE",]
+temp_min_scale[1,2:4] <- b4 <- coefsf["temp_min_scale",]
+year_offset.infoff[1,2:4] <- b3 <- coefsf["year_offset:infoff",]
+year_offset.temp_min_scale[1,2:4] <- b5 <- coefsf["year_offset:temp_min_scale",]
+infoff.temp_min_scale[1,2:4] <- b6 <- coefsf["infoff:temp_min_scale",]
+year_offset.infoff.temp_min_scale[1,2:4] <- b7 <- coefsf["year_offset:infoff:temp_min_scale",]
+
 colnames(X)[9] <- "data"
 
 X2 <- X %>% 
@@ -69,43 +102,19 @@ g3 <- modres$summary.random$hexID[,1:2] %>%
   select(mean) %>% 
   pull(mean)
 
-betas <- c(b1, b2, b3, b4, b5, b6, b7, b8)
+betas <- as.numeric(c(b1$mean, b2$mean, b8$mean, b4$mean,
+                      b3$mean, b5$mean, b6$mean, b7$mean))
 
-lambda <- exp(b0 + X2 %*% betas +
+lambda <- exp(b0$mean + X2 %*% betas +
                 Z1 %*% g1 +    #X$ObserverRoute
                 Z2 %*% g2 +    #X$Year
                 Z3 %*% g3
               )
 
-
-#hist(y)
-#hist(BIRDtab$SpeciesTotal)
-
 X3 <- cbind(as.data.frame(X2), X$ObserverRoute, X$Year, X$hexID)
 colnames(X3)[9:11] <- c("ObserverRoute", "Year", "hexID")
 
-formula1 <- SpeciesTotal ~ 1 + 
-  year_offset + 
-  infoff +
-  year_offset : infoff +
-  NewObserver +
-  temp_min_scale +
-  temp_min_scale : year_offset +
-  temp_min_scale : infoff +
-  temp_min_scale : infoff : year_offset +
-  f(ObserverRoute, model="iid") + 
-  f(Year, model="iid") +
-  f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
-
-hex.adj <- paste0("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/hexmap.graph")
-
-final <- cbind(c(b0, betas), modres$summary.fixed$`0.025quant`, modres$summary.fixed$`0.975quant`) 
-final <- as.tibble(final)
-colnames(final) <- c("esti","estiLO", "estiUP")
-
-final2 <- as_tibble(matrix(NA, nrow = nrow(final), ncol = reps))
-
-for(i in 1:reps){
+for(i in 2:sims+1){
   
   y <- rpois(length(lambda),lambda)
   BIRDx <- cbind(y, X3)
@@ -115,14 +124,65 @@ for(i in 1:reps){
                control.predictor=list(compute=TRUE), 
                control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   
-  final2[,i] <- m1in$summary.fixed$mean
-  if(i > 1){BIRDx2 <- rbind(BIRDx2,BIRDx)} else {
-    BIRDx2 <- BIRDx
-  }
+  coefs <- m1in$summary.fixed[,c(1,3,5)]
+  
+  intercept[i,1] <- year_offset[i,1] <- infoff[i,1] <- NewObserver[i,1] <- temp_min_scale[i,1] <- year_offset.infoff[i,1] <- 
+    year_offset.temp_min_scale[i,1] <- infoff.temp_min_scale[i,1] <- year_offset.infoff.temp_min_scale[i,1] <- i
+  
+  intercept[i,2:4] <- coefs["(Intercept)",]
+  year_offset[i,2:4] <- coefs["year_offset",]
+  infoff[i,2:4] <- coefs["infoff",]
+  NewObserver[i,2:4] <- coefs["NewObserverTRUE",]
+  temp_min_scale[i,2:4] <- coefs["temp_min_scale",]
+  year_offset.infoff[i,2:4] <- coefs["year_offset:infoff",]
+  year_offset.temp_min_scale[i,2:4] <- coefs["year_offset:temp_min_scale",]
+  infoff.temp_min_scale[i,2:4] <- coefs["infoff:temp_min_scale",]
+  year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
+  
+  premperm <- list(intercept,
+                   year_offset,
+                   infoff,
+                   NewObserver,
+                   temp_min_scale,
+                   year_offset.infoff,
+                   year_offset.temp_min_scale,
+                   infoff.temp_min_scale)
+  
+  name3 <- glue("data/models_res/{species}/premsims.rds")
+  
+  write_rds(premperm, file = name3)
+
   rm(m1in)
   print(i)
   
 }
+
+resu <- run_model(BIRDtab2, formula)
+coefsf <- resu$summary.fixed[,c(1,3,5)]
+
+intercept$par <- "intercept"
+year_offset$par <- "year_offset"
+infoff$par <- "infoff"
+NewObserver$par <- "NewObserver"
+temp_min_scale$par <- "temp_min_scale"
+year_offset.infoff$par <- "year_offset.infoff"
+year_offset.temp_min_scale$par <- "year_offset.temp_min_scale"
+infoff.temp_min_scale$par <- "infoff.temp_min_scale"
+year_offset.infoff.temp_min_scale$par <- "year_offset.infoff.temp_min_scale"
+
+intercept$par2 <- "B0"
+year_offset$par2 <- "B1"
+infoff$par2 <- "B2"
+NewObserver$par2 <- "B8"
+temp_min_scale$par2 <- "B4"
+year_offset.infoff$par2 <- "B3"
+year_offset.temp_min_scale$par2 <- "B5"
+infoff.temp_min_scale$par2 <- "B6"
+year_offset.infoff.temp_min_scale$par2 <- "B7"
+
+plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
+                  year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
+
 
 final2 <- cbind(final2, c("b0", "b1", "b2", "b8", "b4", 
                           "b3", "b5", "b6", "b7"))
