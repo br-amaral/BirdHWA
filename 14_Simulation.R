@@ -45,10 +45,10 @@ X <- BIRDtab %>%
          temp_min_scale = as.numeric(temp_min_scale)
   ) 
 
-intercept <- matrix(NA, nrow = sims + 1, ncol = 3) %>%
+intercept <- matrix(NA, nrow = sims + 1, ncol = 4) %>%
   as_tibble()
 
-colnames(intercept) <- c("mean", "low", "up")
+colnames(intercept) <- c("sim","mean", "low", "up")
 
 intercept <- intercept %>% 
   mutate(mean = as.numeric(mean),
@@ -114,7 +114,7 @@ lambda <- exp(b0$mean + X2 %*% betas +
 X3 <- cbind(as.data.frame(X2), X$ObserverRoute, X$Year, X$hexID)
 colnames(X3)[9:11] <- c("ObserverRoute", "Year", "hexID")
 
-for(i in 2:sims+1){
+for(i in 1:sims+1){
   
   y <- rpois(length(lambda),lambda)
   BIRDx <- cbind(y, X3)
@@ -132,7 +132,7 @@ for(i in 2:sims+1){
   intercept[i,2:4] <- coefs["(Intercept)",]
   year_offset[i,2:4] <- coefs["year_offset",]
   infoff[i,2:4] <- coefs["infoff",]
-  NewObserver[i,2:4] <- coefs["NewObserverTRUE",]
+  NewObserver[i,2:4] <- coefs["NewObserver",]
   temp_min_scale[i,2:4] <- coefs["temp_min_scale",]
   year_offset.infoff[i,2:4] <- coefs["year_offset:infoff",]
   year_offset.temp_min_scale[i,2:4] <- coefs["year_offset:temp_min_scale",]
@@ -146,9 +146,10 @@ for(i in 2:sims+1){
                    temp_min_scale,
                    year_offset.infoff,
                    year_offset.temp_min_scale,
-                   infoff.temp_min_scale)
+                   infoff.temp_min_scale,
+                   year_offset.infoff.temp_min_scale)
   
-  name3 <- glue("data/models_res/{species}/premsims.rds")
+  name3 <- glue("data/models_res/{species}/premsims2.rds")
   
   write_rds(premperm, file = name3)
 
@@ -156,9 +157,6 @@ for(i in 2:sims+1){
   print(i)
   
 }
-
-resu <- run_model(BIRDtab2, formula)
-coefsf <- resu$summary.fixed[,c(1,3,5)]
 
 intercept$par <- "intercept"
 year_offset$par <- "year_offset"
@@ -180,239 +178,162 @@ year_offset.temp_min_scale$par2 <- "B5"
 infoff.temp_min_scale$par2 <- "B6"
 year_offset.infoff.temp_min_scale$par2 <- "B7"
 
-plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
+coefs <- plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
                   year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
 
+saveRDS(plot_tib, file = glue("data/models_res/{species}/sims{species}.rds", sep= ""))  
 
-final2 <- cbind(final2, c("b0", "b1", "b2", "b8", "b4", 
-                          "b3", "b5", "b6", "b7"))
-colnames(final2)[reps+1] <- "coef"
+TEMPQUANT_PATH <- glue("data/tempquant.csv")
 
-b0_si <- final2[1,-(reps+1)]%>% 
-  t() %>% 
+temp_qunts <- read_csv(TEMPQUANT_PATH)
+
+temp_qunts2 <- temp_qunts %>% 
   as_tibble() %>% 
-  mutate(coe = "b0") %>% 
-  rename(coefval = `1`) %>% 
-  slice(-c(1,2,3))
+  rename(Species = species, t1 = ...2, t2 = ...3, t3 = ...4) %>% 
+  dplyr::filter(trimws(Species) == trimws(species))
 
-b1_si <- final2[2,-(reps+1)] %>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b1") %>% 
-  rename(coefval = `2`) %>% 
-  slice(-c(1,2,3))
+coefs2 <- coefs %>%
+  select(par, mean) %>% 
+  group_by(par) %>%
+  mutate(row = row_number()) %>%
+  tidyr::pivot_wider(names_from = par, values_from = mean) %>%
+  select(-row)
 
-b2_si <- final2[3,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b2") %>% 
-  rename(coefval = `3`) %>% 
-  slice(-c(1,2,3))
+pmat <- coefs2 %>% 
+  mutate(temp1 = pull(temp_qunts2[ ,2]),
+         temp2 = pull(temp_qunts2[ ,3]),
+         temp3 = pull(temp_qunts2[ ,4]),
+         time = 20
+  )
 
-b3_si <- final2[6,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b5") %>% 
-  rename(coefval = `6`) %>% 
-  slice(-c(1,2,3))
+# estimates -----------
+prop_tabX <- as_tibble(matrix(NA,nrow = nrow(pmat), ncol = 6))
+colnames(prop_tabX) <- c("noinf1", "inf1", "noinf2", "inf2", "noinf3", "inf3")
 
-b4_si <- final2[5,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b4") %>% 
-  rename(coefval = `5`) %>% 
-  slice(-c(1,2,3))
-
-b5_si <- final2[7,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b8") %>% 
-  rename(coefval = `7`) %>% 
-  slice(-c(1,2,3))
-
-b6_si <- final2[8,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b6") %>% 
-  rename(coefval = `8`) %>% 
-  slice(-c(1,2,3))
-
-b7_si <- final2[9,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b7") %>% 
-  rename(coefval = `9`) %>% 
-  slice(-c(1,2,3))
-
-b8_si <- final2[4,-(reps+1)]%>% 
-  t() %>% 
-  as_tibble() %>% 
-  mutate(coe = "b3") %>% 
-  rename(coefval = `4`) %>% 
-  slice(-c(1,2,3))
-
-
-bs_si <- rbind(b0_si, b1_si, b2_si, b3_si, b4_si,
-               b5_si, b6_si, b7_si, b8_si)
-
-betas2 <- c(b0, betas) %>% 
-  as_tibble
-coef_vec <- as.vector(final2$coef)
-betas2 <- cbind(betas2, coef_vec)
-colnames(betas2)[2] <- "coef"
-
-final_props <- as_tibble(matrix(NA, nrow = 9, ncol = reps)) %>% 
-  mutate_if(is.logical,as.numeric)
-
-for(k in 1:nrow(final_props)){
-  for(l in 1:ncol(final_props)){
-    
-    if(is.na(final2[k,l])) {final_props[k,l] <- 0} else {
-      
-      if(between(final2[k,l], final[k,2], final[k,3]) ) {
-        final_props[k,l] <- 1} else {final_props[k,l] <- 0}
-    }
-  }
+for (i in 1:nrow(prop_tabX)){
+  
+  ifelse(!is.na(pmat$intercept[i]), b0 <- pmat$intercept[i], b0 <- 0)
+  ifelse(!is.na(pmat$year_offset[i]), b1 <- pmat$year_offset[i], b1 <- 0)
+  ifelse(!is.na(pmat$infoff[i]), b2 <- pmat$infoff[i], b2 <- 0)
+  ifelse(!is.na(pmat$temp_min_scale[i]), b3 <- pmat$temp_min_scale[i], b3 <- 0)
+  ifelse(!is.na(pmat$year_offset.infoff[i]), b4 <- pmat$year_offset.infoff[i], b4 <- 0)
+  ifelse(!is.na(pmat$year_offset.temp_min_scale[i]), b5 <- pmat$year_offset.temp_min_scale[i], b5 <- 0)
+  ifelse(!is.na(pmat$infoff.temp_min_scale[i]), b6 <- pmat$infoff.temp_min_scale[i], b6 <- 0)
+  ifelse(!is.na(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- pmat$year_offset.infoff.temp_min_scale[i], b7 <- 0)
+  
+  no_infes <- pmat[i,] %>% 
+    mutate(prediction1 = exp(b0 + (b1 * time) + (b3 * temp1) + (b5 * year_offset * temp1)),
+           prediction2 = exp(b0 + (b1 * time) + (b3 * temp2) + (b5 * year_offset * temp2)),
+           prediction3 = exp(b0 + (b1 * time) + (b3 * temp3) + (b5 * year_offset * temp3)),
+           HWA = 'infest'
+    )
+  
+  infes <- pmat[i,] %>% 
+    mutate(prediction1 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp1) +
+                               (b4 * time * infoff) + (b5 * time * temp1) +
+                               (b6 * infoff * temp1) + (b7 * time * infoff * temp1)),
+           prediction2 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp2) +
+                               (b4 * time * infoff) + (b5 * time * temp2) +
+                               (b6 * infoff * temp2) + (b7 * time * infoff * temp2)),
+           prediction3 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp3) +
+                               (b4 * time * infoff) + (b5 * time * temp3) +
+                               (b6 * infoff * temp3) + (b7 * time * infoff * temp3)),
+           HWA = 'no_infest'
+    )
+  prop_tabX$noinf1[i] <- no_infes$prediction1
+  prop_tabX$inf1[i] <- infes$prediction1
+  prop_tabX$noinf2[i] <- no_infes$prediction2
+  prop_tabX$inf2[i] <- infes$prediction2
+  prop_tabX$noinf3[i] <- no_infes$prediction3
+  prop_tabX$inf3[i] <- infes$prediction3
+  rm(no_infes, infes,
+     b0, b1, b2, b3, b4, b5, b6, b7)
 }
 
-final_props2 <- rep(NA, nrow(betas2))
+prop_tabX <- prop_tabX %>% 
+  mutate(t1 = log(noinf1/inf1),
+         t2 = log(noinf2/inf2),
+         t3 = log(noinf3/inf3),
+         Species = species)
 
-for(m in 1:nrow(betas2)) {
-  final_props2[m] <- (sum(final_props[m,]))/reps
-}
+master_full_per <- prop_tabX[1,] %>% 
+  pivot_longer(`t1`:`t3`, names_to = "temp", values_to = "pop202") %>% 
+  select(Species, temp, pop202) %>% 
+  mutate(sps_temp = glue("{Species}_{temp}", remove = FALSE))
 
-coeflabs <- c(glue("intercept\n{final_props2[1]}"),
-              glue("year_offset\n{final_props2[2]}"),
-              glue("infoff\n{final_props2[3]}"),
-              glue("NewObserver\n{final_props2[4]}"),
-              glue("temp_min\n{final_props2[5]}"),
-              glue("year_offset\ninfoff\n{final_props2[6]}"),
-              glue("year_offset\ntemp_min\n{final_props2[7]}"),
-              glue("infoff\ntemp_min\n{final_props2[8]}"),
-              glue("year_offset\ninfoff\ntemp_min\n{final_props2[9]}"))
+prop_tabX2 <- prop_tabX[2:nrow(prop_tabX),] %>% 
+  pivot_longer(`t1`:`t3`, names_to = "temp", values_to = "pop202") %>% 
+  select(Species, temp, pop202) %>% 
+  mutate(sps_temp = glue("{Species}_{temp}", remove = FALSE))
 
-final$par <- c("b0", "b1", "b2", "b3", "b4", "b5", 
-                      "b6", "b7", "b8")
-ggplot() +
-  geom_linerange(data = final, 
-                 mapping = aes(x = par, y = esti,
-                               ymin = estiLO, ymax = estiUP,
-                               lwd = 6),
-                 color = "grey", alpha = 0.7, size = 12) +
-  geom_crossbar(data = final, mapping = aes(x = par, y = esti, 
-                                            ymin = esti , ymax = esti)) +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position="none",
-        axis.title.x=element_blank()) +
-  ggtitle("Simulation Coefficient Overlap") +
-  geom_point(data = bs_si,
-             aes(x = coe,
-                 y = coefval),
-             size = 0.75,
-             position = position_jitter(width = 0.08)) +
-  scale_x_discrete(labels= coeflabs)  
+temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>% 
+  rename(temp = V1,
+         orde = V2)
 
+prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>% 
+  arrange(orde)
 
-sps_preds <- readRDS(glue("data/preds/preds_{species}.rds")) %>% 
-  mutate(species = species,
-         prediction = NA) %>% 
-  filter(year == 20)
+(pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
+    geom_point(aes(shape = temp), colour = "grey", size = 2) +
+    geom_vline(xintercept = 0,
+               col = "gray43",
+               linetype = "dotted",
+               size = 1) +
+    geom_point(data = master_full_per, 
+               aes(y = sps_temp, x = pop202,
+                   shape = temp), colour = "black", size = 2) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          #legend.title = element_blank(),
+          legend.position = "right",
+          legend.justification = "right",
+          #legend.margin=margin(0,0,0,0),
+          #legend.box.margin=margin(-5,0,-5,-7),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.title.align = 0.5) +
+    scale_x_continuous(breaks = seq(-3, 1, 0.5),
+                       limits = c(-3, 1, 0.5)) +
+    scale_color_manual(values = c("t1" = "blue4",
+                                  "t2" = "violetred",
+                                  "t3" = "darkorange3"),
+                       labels = c("t1" = "0.2",
+                                  "t2" = "0.5",
+                                  "t3" = "0.8"),
+                       name = "Temperature\nQuantiles")) +
+  ggtitle("Simulation")
 
-sps_preds_real <- sps_preds
+master_full_per <- master_full_per %>% 
+  mutate(temp2 = temp)
 
-sps_preds <- do.call(rbind, replicate(reps, sps_preds, simplify=FALSE))
-
-props <- matrix(NA, nrow = reps, ncol = 3)
-colnames(props) <- c("t1","t2","t3")
-final2 <- final2 %>% 
-  arrange(coef)
-
-sps_preds$loop <- NA
-
-k <- i <- j <- 1
-for(j in 1:reps){
-  print(j)
- 
-      b0 <- final3[1,j]; b1 <- final3[2,j]; b2 <- final3[3,j]; b3 <- final3[4,j]; b4 <- final3[5,j]
-      b5 <- final3[6,j]; b6 <- final3[7,j]; b7 <- final3[8,j]; b8 <- final3[9,j]
-
-      for(k in i:(i+5)) {
-        if(sps_preds$HWA[k] == "no_infest") {
-        sps_preds$prediction[k] <- exp(
-              b0 + (b1 * sps_preds$year_off_t[k]) + (b3 * sps_preds$temp_t[k]) +
-                (b5 * sps_preds$year_off_t[k] * sps_preds$temp_t[k]))
-        }
-        if(sps_preds$HWA[k] == "infest") {
-          sps_preds$prediction[k] <- exp(
-            b0 + (b1 * sps_preds$year_off_t[k]) + (b2 * sps_preds$infoff_t[k]) + (b3 * sps_preds$temp_t[k]) +
-              (b4 * sps_preds$year_off_t[k] * sps_preds$infoff_t[k]) + (b5 * sps_preds$year_off_t[k] * sps_preds$temp_t[k]) +
-              (b6 * sps_preds$infoff_t[k] * sps_preds$temp_t[k]) + (b7 * sps_preds$year_off_t[k] * sps_preds$infoff_t[k] * sps_preds$temp_t[k]))
-        }
-      }
-      sps_preds$loop[i] <- b0
-      i <- i + 6
-}
-
-sps_preds$prop <- NA
-
-for(i in seq(from=1, to=nrow(sps_preds), by=2)) {
-  sps_preds$prop[i] <- sps_preds$prop[i+1] <- log(sps_preds$prediction[i+1]/sps_preds$prediction[i])
-}
-
-sps_preds2 <- sps_preds %>% 
-  filter(HWA == "infest") %>%    ## get only a copy from prop
-  select(-loop)
-
-for(k in 1:6) {
-  if(sps_preds_real$HWA[k] == "no_infest") {
-    sps_preds_real$prediction[k] <- exp(
-      b0r + (b1r * sps_preds_real$year_off_t[k]) + (b3r * sps_preds_real$temp_t[k]) +
-        (b5r * sps_preds_real$year_off_t[k] * sps_preds_real$temp_t[k]))
-  }
-  if(sps_preds_real$HWA[k] == "infest") {
-    sps_preds_real$prediction[k] <- exp(
-      b0r + (b1r * sps_preds_real$year_off_t[k]) + (b2r * sps_preds_real$infoff_t[k]) + (b3r * sps_preds_real$temp_t[k]) +
-        (b4r * sps_preds_real$year_off_t[k] * sps_preds_real$infoff_t[k]) + (b5r * sps_preds_real$year_off_t[k] * sps_preds_real$temp_t[k]) +
-        (b6r * sps_preds_real$infoff_t[k] * sps_preds_real$temp_t[k]) + (b7r * sps_preds_real$year_off_t[k] * sps_preds_real$infoff_t[k] * sps_preds_real$temp_t[k]))
-  }
-}
-
-sps_preds_real$prop <- NA
-for(i in seq(from=1, to=nrow(sps_preds_real), by=2)) {
-  sps_preds_real$prop[i] <- sps_preds_real$prop[i+1] <- log(sps_preds_real$prediction[i+1]/sps_preds_real$prediction[i])
-}
-
-sps_preds_real <- sps_preds_real %>% 
-  filter(HWA == "infest")
-
-ggplot(data = sps_preds2, aes(y= species, x = prop)) +
+ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
   geom_vline(xintercept = 0,
              col = "gray43",
              linetype = "dotted",
              size = 1) +
-  geom_point(aes(shape = temp, color = temp), size = 2) +
+  #geom_point(aes(shape = temp, color = temp), size = 2) +
+  geom_boxplot() + 
+  # facet_wrap(~temp) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         #legend.title = element_blank(),
-        legend.position = "right",
-        legend.justification = "right",
+        legend.position = "none",
+        #legend.justification = "right",
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        legend.title.align = 0.5) +
+        legend.title.align = 0.5,
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   #scale_x_continuous(breaks = seq(-3, 1, 0.5),
   #                   limits = c(-3, 1, 0.5)) +
-  scale_color_manual(values = c("t1" = "blue4",
-                                "t2" = "violetred",
-                                "t3" = "darkorange3"),
-                     labels = c("t1" = "0.2",
-                                "t2" = "0.5",
-                                "t3" = "0.8"),
-                     name = "Temperature\nQuantiles") + 
-  facet_wrap(~temp, nrow = 3) +
-  geom_point(aes(shape = temp, color = temp), size = 2) +
-  geom_point(data = sps_preds_real, aes(y= species, x = prop))
-
+  geom_point(data = master_full_per, aes(y = sps_temp, x = pop202,
+                                         shape = temp2, color = temp2
+  ), size = 3) +
+  labs(title="Permutation analysis") #+
+  #coord_flip() +
+  #scale_y_discrete(limits=rev)

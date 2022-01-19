@@ -171,13 +171,14 @@ run_sensi <- function(species, offsets) {
     year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
     
     premsensi <- list(intercept,
-                     year_offset,
-                     infoff,
-                     NewObserver,
-                     temp_min_scale,
-                     year_offset.infoff,
-                     year_offset.temp_min_scale,
-                     infoff.temp_min_scale
+                      year_offset,
+                      infoff,
+                      NewObserver,
+                      temp_min_scale,
+                      year_offset.infoff,
+                      year_offset.temp_min_scale,
+                      infoff.temp_min_scale,
+                      year_offset.infoff.temp_min_scale
     )
     
     name3 <- glue("data/models_res/{species}/sensi/premsensi.rds")
@@ -259,7 +260,7 @@ run_perm <- function(species, perm, offsets) {
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
- # dir.create(glue("data/models_res/{species}/perm"))
+  # dir.create(glue("data/models_res/{species}/perm"))
   
   intercept <- matrix(NA, nrow = perm, ncol = 3) %>%
     as_tibble()
@@ -307,7 +308,8 @@ run_perm <- function(species, perm, offsets) {
                      temp_min_scale,
                      year_offset.infoff,
                      year_offset.temp_min_scale,
-                     infoff.temp_min_scale
+                     infoff.temp_min_scale,
+                     year_offset.infoff.temp_min_scale
     )
     
     name3 <- glue("data/models_res/{species}/perm/premperm.rds")
@@ -382,7 +384,7 @@ run_perm <- function(species, perm, offsets) {
   
 }
 
-for(i in 1:nrow(sps_list)){
+for(i in 7:nrow(sps_list)){
   
   species <- sps_list[i,]
   #run_sensi(species = species, offsets = 2)
