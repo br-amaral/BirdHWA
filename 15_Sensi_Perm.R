@@ -15,7 +15,7 @@ library(INLA)
 library(tidyverse)
 library(glue)
 
-# species <- "BHVI"
+#species <- "HETH"
 offsets <- 2
 mod <- 1
 
@@ -27,7 +27,7 @@ hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 formula <- get(glue("formula{mod}"))
 
 create_data <- function(offset2, BIRDx) {
-  ## Create an year offset for that species ------------------  
+  # Create an year offset for that species 
   BIRDx2 <- BIRDx %>%  
     # remove 20 ears before and after infestation
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
@@ -48,7 +48,13 @@ create_data <- function(offset2, BIRDx) {
 # function to randomize infestation year
 permute_data <- function(offset2, BIRDy){
   
-  ## permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
+  # permute years, group by route
+  BIRDy <- BIRDy %>% 
+    group_by(RouteId) %>% 
+    mutate(yr_shuf = sample(Year)) %>% 
+    ungroup()
+  
+  #permute data keeping the same number of infested routes in each year, but randomizing the roues where infestation arrived
   # find out how many routes first infested in each calendar year
   yr_inf <- table(BIRDy$RouteId, BIRDy$YearInfested) %>% 
     as.data.frame.matrix() %>% 
@@ -89,7 +95,11 @@ permute_data <- function(offset2, BIRDy){
            Infested = replace(Infested, !is.finite(Infested), 0),
            yrhwa = replace(yrhwa, !is.finite(yrhwa), 0))
   
-  ## Create an year offset for that species ------------------  
+  # permute temperatures
+  
+  BIRDy3$temp_min_scale <- sample(BIRDy3$temp_min_scale)
+  
+  # Create an year offset for that species 
   BIRDy4 <- BIRDy3 %>%  
     # remove 20 ears before and after infestation
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
@@ -132,6 +142,8 @@ run_sensi <- function(species, offsets) {
            up = as.numeric(up))
   intercept <- as.data.frame(intercept)
   intercept <- cbind(routes,intercept)
+  intercept[(nrow(routes)) + 1,] <- NA
+  intercept[(nrow(routes)) + 1,1] <- 'full'
   
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
@@ -158,14 +170,38 @@ run_sensi <- function(species, offsets) {
     infoff.temp_min_scale[i,2:4] <- coefs["infoff:temp_min_scale",]
     year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
     
+    premsensi <- list(intercept,
+                      year_offset,
+                      infoff,
+                      NewObserver,
+                      temp_min_scale,
+                      year_offset.infoff,
+                      year_offset.temp_min_scale,
+                      infoff.temp_min_scale,
+                      year_offset.infoff.temp_min_scale
+    )
+    
+    name3 <- glue("data/models_res/{species}/sensi/premsensi.rds")
+    
+    write_rds(premsensi, file = name3)
+    
     #saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
-    rm(coefs)
   }
   
-  resu <- run_model(BIRDtab2, formula)
-  coefs <- resu$summary.fixed[,c(1,3,5)]
+  resu2 <- run_model(BIRDtab2, formula)
+  coefsf <- resu2$summary.fixed[,c(1,3,5)]
+  
+  intercept[(nrow(routes)) + 1,2:4] <- coefsf["(Intercept)",]
+  year_offset[(nrow(routes)) + 1,2:4] <- coefsf["year_offset",]
+  infoff[(nrow(routes)) + 1,2:4] <- coefsf["infoff",]
+  NewObserver[(nrow(routes)) + 1,2:4] <- coefsf["NewObserverTRUE",]
+  temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["temp_min_scale",]
+  year_offset.infoff[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:infoff",]
+  year_offset.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:temp_min_scale",]
+  infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["infoff:temp_min_scale",]
+  year_offset.infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:infoff:temp_min_scale",]
   
   intercept$par <- "intercept"
   year_offset$par <- "year_offset"
@@ -197,6 +233,8 @@ run_sensi <- function(species, offsets) {
   plot_tib2$up <- coefs$`0.975quant`
   plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
   
+  saveRDS(plot_tib, file = glue("data/models_res/{species}/sensi/coefs_{species}.rds", sep= ""))
+  
   ptt <- ggplot(data = plot_tib, aes(x = par2, y = mean)) +
     geom_jitter(col = "gray") +
     #geom_errorbar(aes(ymin=low, ymax=up),
@@ -212,7 +250,6 @@ run_sensi <- function(species, offsets) {
                   size=.3, width=0.1) +
     ggtitle("Sensitivity Analysis")
   
-  saveRDS(plot_tib, file = glue("data/models_res/{species}/sensi/coefs_{species}.rds", sep= ""))
   saveRDS(ptt, file = glue("data/models_res/{species}/sensi/sensiplot_{species}.rds", sep= ""))  
   
 }
@@ -223,7 +260,7 @@ run_perm <- function(species, perm, offsets) {
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
- # dir.create(glue("data/models_res/{species}/perm"))
+  # dir.create(glue("data/models_res/{species}/perm"))
   
   intercept <- matrix(NA, nrow = perm, ncol = 3) %>%
     as_tibble()
@@ -235,6 +272,8 @@ run_perm <- function(species, perm, offsets) {
            low = as.numeric(low),
            up = as.numeric(up))
   intercept <- as.data.frame(intercept)
+  intercept[perm + 1,] <- NA
+  intercept[perm + 1,1] <- 'full'
   
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
@@ -262,13 +301,38 @@ run_perm <- function(species, perm, offsets) {
     infoff.temp_min_scale[i,1:3] <- coefs["infoff:temp_min_scale",]
     year_offset.infoff.temp_min_scale[i,1:3] <- coefs["year_offset:infoff:temp_min_scale",]
     
+    premperm <- list(intercept,
+                     year_offset,
+                     infoff,
+                     NewObserver,
+                     temp_min_scale,
+                     year_offset.infoff,
+                     year_offset.temp_min_scale,
+                     infoff.temp_min_scale,
+                     year_offset.infoff.temp_min_scale
+    )
+    
+    name3 <- glue("data/models_res/{species}/perm/premperm.rds")
+    
+    write_rds(premperm, file = name3)
+    
     #saveRDS(object = get(name), file = name2)
     rm(resu)
     rm(BIRDtab3)
     rm(name)
   }
   resu <- run_model(BIRDtab2, formula)
-  coefs <- resu$summary.fixed[,c(1,3,5)]
+  coefsf <- resu$summary.fixed[,c(1,3,5)]
+  
+  intercept[(perm) + 1,2:4] <- coefsf["(Intercept)",]
+  year_offset[(perm) + 1,2:4] <- coefsf["year_offset",]
+  infoff[(perm) + 1,2:4] <- coefsf["infoff",]
+  NewObserver[(perm) + 1,2:4] <- coefsf["NewObserverTRUE",]
+  temp_min_scale[(perm) + 1,2:4] <- coefsf["temp_min_scale",]
+  year_offset.infoff[(perm) + 1,2:4] <- coefsf["year_offset:infoff",]
+  year_offset.temp_min_scale[(perm) + 1,2:4] <- coefsf["year_offset:temp_min_scale",]
+  infoff.temp_min_scale[(perm) + 1,2:4] <- coefsf["infoff:temp_min_scale",]
+  year_offset.infoff.temp_min_scale[(perm) + 1,2:4] <- coefsf["year_offset:infoff:temp_min_scale",]
   
   intercept$par <- "intercept"
   year_offset$par <- "year_offset"
@@ -316,10 +380,17 @@ run_perm <- function(species, perm, offsets) {
     ggtitle("Permutation Analysis")
   
   saveRDS(plot_tib, file = glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= ""))  
-  saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
+  #saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
   
 }
 
-# run_sensi(species = species, offsets = 2)
-# run_perm(species = species, perm = 100, offsets = 2)
+for(i in 7:nrow(sps_list)){
+  
+  species <- sps_list[i,]
+  #run_sensi(species = species, offsets = 2)
+  run_perm(species = species, perm = 250, offsets = 2)
+  
+}
+
+
 

@@ -337,6 +337,12 @@ r <- sensi_pro(sps_list[17,])
 
 master_pro <- rbind(a,b,c,d,e,f,g,h,k,l,m,n,o,q,r)
 
+master_full <- master_pro %>% 
+  filter(RouteId == "full")
+
+master_pro <- master_pro %>% 
+  filter(RouteId != "full")
+
 master_full$temp2 <- NA
 for(i in 1:nrow(master_full)){
   if(master_full$temp[i] == "t1") {master_full$temp2[i] <- "tt1" }
@@ -356,9 +362,7 @@ master_pro2 <- left_join(master_pro2, temp_order, by = "temp") %>%
   arrange(orde)
 
 master_full2 <- left_join(master_full, temp_order, by = "temp") %>% 
-  arrange(orde) %>% 
-  arrange(species, temp) %>% 
-  unite(sps_temp, species:temp, remove = FALSE)
+  unite(sps_temp, c(species,temp), remove = FALSE)
 
 ggplot(data = master_pro2, aes(y= sps_temp, x = prop)) +
   geom_vline(xintercept = 0,
@@ -366,7 +370,8 @@ ggplot(data = master_pro2, aes(y= sps_temp, x = prop)) +
              linetype = "dotted",
              size = 1) +
   geom_point(aes(shape = temp, color = temp), size = 2) +
-  #geom_boxplot() + facet_wrap(~temp) +
+  geom_boxplot() + 
+  #facet_wrap(~temp) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -414,8 +419,8 @@ master_pro3 <- master_pro2 %>%
   select(sps_temp, prop, orde, tab, temp, temp2, species)
 
 master_pro_full <- rbind(master_full3, master_pro3) %>% 
-  group_by(sps_temp) %>%
-  mutate(across(contains("prop"),scale))
+  group_by(sps_temp) #%>%
+  #mutate(across(contains("prop"),scale))
 
 master_full3 <- master_pro_full %>% 
   filter(tab == "full")
