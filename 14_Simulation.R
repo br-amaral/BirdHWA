@@ -182,6 +182,10 @@ coefs <- plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min
                   year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
 
 saveRDS(plot_tib, file = glue("data/models_res/{species}/sims{species}.rds", sep= ""))  
+## just plotting!   -------------------------
+species <- "HETH"
+
+coefs <- plot_tib <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/HETH/simsHETH.rds")
 
 TEMPQUANT_PATH <- glue("data/tempquant.csv")
 
@@ -274,7 +278,8 @@ prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>%
   arrange(orde)
 
 (pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
-    geom_point(aes(shape = temp), colour = "grey", size = 2) +
+    #geom_point(aes(shape = temp), colour = "grey", size = 2) +
+    geom_boxplot() +
     geom_vline(xintercept = 0,
                col = "gray43",
                linetype = "dotted",
@@ -334,6 +339,6 @@ ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
   geom_point(data = master_full_per, aes(y = sps_temp, x = pop202,
                                          shape = temp2, color = temp2
   ), size = 3) +
-  labs(title="Permutation analysis") #+
+  labs(title="Simulation") #+
   #coord_flip() +
   #scale_y_discrete(limits=rev)
