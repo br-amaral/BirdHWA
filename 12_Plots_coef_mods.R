@@ -46,6 +46,11 @@ for(k in 1:length(colsindex)){
   }
 }
 
+yrmod <- pmat %>% 
+  select(species, model, year) %>% 
+  filter(!is.na(species)) %>% 
+  saveRDS(file = "data/models_res/yrmod.rds")
+
 ## plots
 
 ## models and years ---------------------------------
