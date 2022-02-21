@@ -384,12 +384,11 @@ run_perm <- function(species, perm, offsets) {
   
 }
 
-for(i in 7:nrow(sps_list)){
+for(i in 1:nrow(sps_list)){
   
   species <- sps_list[i,]
-  #run_sensi(species = species, offsets = 2)
-  run_perm(species = species, perm = 250, offsets = 2)
-  
+  run_sensi(species = species, offsets = 2)
+  run_perm(species = "species", perm = 500, offsets = 2)
 }
 
 
