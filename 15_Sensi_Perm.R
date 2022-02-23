@@ -24,8 +24,6 @@ hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 # best model and lag for each species info
 yrmod <- read_csv(file = "data/models_res/yrmod.csv") 
 
-yrmod$species2[4] <- "HETH"
-#
 create_data <- function(offset2, BIRDx) {
   # Create an year offset for that species 
   BIRDx2 <- BIRDx %>%  
@@ -234,7 +232,7 @@ run_sensi <- function(species) {
                   ifelse(!is.na(sum(coefsf["temp_min_scale:year_offset:infoff",])), coefsf["temp_min_scale:year_offset:infoff",],
                          ifelse(!is.na(sum(coefsf["temp_min_scale:infoff:year_offset",])), coefsf["temp_min_scale:infoff:year_offset",],
                                 ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:year_offset",])), coefsf["infoff:temp_min_scale:year_offset",],
-                                       ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:infoff",])), coefsf["infoff:temp_min_scale:infoff",]
+                                       ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:infoff",])), coefsf["infoff:temp_min_scale:infoff",],NA
                                        ))))))
   
   intercept$par <- "intercept"
