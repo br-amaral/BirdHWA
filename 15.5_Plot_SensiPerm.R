@@ -6,6 +6,9 @@ SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 sps_list <- read_csv(SPECIES_DATA_PATH)
 order <- rev(rep(c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
            "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WEWA", "WOTH"), each = 3))
+
+yrmod <- read_csv(file = "data/models_res/yrmod.csv") 
+
 # sensitivity    -----------
 sensi_pro <- function(species) {
   COEF_PATH_SENSI <- glue("data/models_res/{species}/sensi/coefs_{species}.rds")
@@ -311,16 +314,14 @@ pred_per_sps <- function(species){
   
   temp_qunts2 <- temp_qunts %>% 
     as_tibble() %>% 
-    rename(Species = species, t1 = ...2, t2 = ...3, t3 = ...4) %>% 
+    rename(Species = species, temp1 = ...2, temp2 = ...3, temp3 = ...4) %>% 
     dplyr::filter(trimws(Species) == trimws(species))
   
   coefs2 <- coefs %>% 
-    filter(mean != "full")
+    filter(mod != "full")
   
   coefs3 <- coefs %>% 
-    filter(mean == "full") %>% 
-    select("low","up","0.975quant","par","par2")
-  colnames(coefs3) <- c("mean","low","up","par","par2")
+    filter(mod == "full") 
     
   coefs2 <- coefs2 %>%
     select(par, mean) %>% 
@@ -341,26 +342,18 @@ pred_per_sps <- function(species){
   coefs <- rbind(coefs2, coefs3)
   
   pmat <- coefs %>% 
-    mutate(temp1 = pull(temp_qunts2[ ,2]),
-           temp2 = pull(temp_qunts2[ ,3]),
-           temp3 = pull(temp_qunts2[ ,4]),
-           time = 20
+    mutate(time = 20,
+           Species = species
     )
   
-  pmat <- transform(pmat, intercept = as.numeric(intercept),
-                    year_offset = as.numeric(year_offset),
-                    infoff = as.numeric(infoff),
-                    NewObserver = as.numeric(NewObserver),
-                    temp_min_scale = as.numeric(temp_min_scale),
-                    year_offset.infoff = as.numeric(year_offset.infoff),
-                    year_offset.temp_min_scale = as.numeric(year_offset.temp_min_scale),
-                    infoff.temp_min_scale = as.numeric(infoff.temp_min_scale),
-                    year_offset.infoff.temp_min_scale = as.numeric(year_offset.infoff.temp_min_scale),
-                    temp1 = as.numeric(temp1),
-                    temp2 = as.numeric(temp2),
-                    temp3 = as.numeric(temp3),
-                    time = as.numeric(time),
-                    type = as.character(type))
+  offsets <- yrmod %>% 
+    filter(species2 == species) %>% 
+    dplyr::select(year) %>% 
+    pull()
+  
+  pmat <- left_join(pmat, temp_qunts2, by= "Species") %>% 
+    dplyr::select(-Species) %>% 
+    mutate(infoff_t = offsets)
   
   # estimates -----------
   prop_tabX <- as_tibble(matrix(NA,nrow = nrow(pmat), ncol = 7))
@@ -368,14 +361,22 @@ pred_per_sps <- function(species){
   
   for (i in 1:nrow(prop_tabX)){
     
-    ifelse(!is.na(pmat$intercept[i]), b0 <- as.numeric(pmat$intercept[i]), b0 <- 0)
-    ifelse(!is.na(pmat$year_offset[i]), b1 <- as.numeric(pmat$year_offset[i]), b1 <- 0)
-    ifelse(!is.na(pmat$infoff[i]), b2 <- as.numeric(pmat$infoff[i]), b2 <- 0)
-    ifelse(!is.na(pmat$temp_min_scale[i]), b3 <- as.numeric(pmat$temp_min_scale[i]), b3 <- 0)
-    ifelse(!is.na(pmat$year_offset.infoff[i]), b4 <- as.numeric(pmat$year_offset.infoff[i]), b4 <- 0)
-    ifelse(!is.na(pmat$year_offset.temp_min_scale[i]), b5 <- as.numeric(pmat$year_offset.temp_min_scale[i]), b5 <- 0)
-    ifelse(!is.na(pmat$infoff.temp_min_scale[i]), b6 <- as.numeric(pmat$infoff.temp_min_scale[i]), b6 <- 0)
-    ifelse(!is.na(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- as.numeric(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- 0)
+    ifelse(is.null(pmat$intercept[i]), b0 <- 0, 
+           ifelse(!is.na(pmat$intercept[i]), b0 <- as.numeric(pmat$intercept[i]), b0 <- 0))
+    ifelse(is.null(pmat$year_offset[i]), b1 <- 0, 
+           ifelse(!is.na(pmat$year_offset[i]), b1 <- as.numeric(pmat$year_offset[i]), b1 <- 0))
+    ifelse(is.null(pmat$infoff[i]), b2 <- 0,
+           ifelse(!is.na(pmat$infoff[i]), b2 <- as.numeric(pmat$infoff[i]), b2 <- 0))
+    ifelse(is.null(pmat$temp_min_scale[i]), b3 <- 0, 
+           ifelse(!is.na(pmat$temp_min_scale[i]), b3 <- as.numeric(pmat$temp_min_scale[i]), b3 <- 0))
+    ifelse(is.null(pmat$year_offset.infoff[i]), b4 <- 0, 
+           ifelse(!is.na(pmat$year_offset.infoff[i]), b4 <- as.numeric(pmat$year_offset.infoff[i]), b4 <- 0))
+    ifelse(is.null(pmat$year_offset.temp_min_scale[i]), b5 <- 0, 
+           ifelse(!is.na(pmat$year_offset.temp_min_scale[i]), b5 <- as.numeric(pmat$year_offset.temp_min_scale[i]), b5 <- 0))
+    ifelse(is.null(pmat$infoff.temp_min_scale[i]), b6 <- 0,
+           ifelse(!is.na(pmat$infoff.temp_min_scale[i]), b6 <- as.numeric(pmat$infoff.temp_min_scale[i]), b6 <- 0))
+    ifelse(is.null(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- 0,
+           ifelse(!is.na(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- as.numeric(pmat$year_offset.infoff.temp_min_scale[i]), b7 <- 0))
     
     no_infes <- pmat[i,] %>% 
       mutate(prediction1 = exp(b0 + (b1 * time) + (b3 * temp1) + (b5 * year_offset * temp1)),
@@ -385,15 +386,15 @@ pred_per_sps <- function(species){
       )
     
     infes <- pmat[i,] %>% 
-      mutate(prediction1 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp1) +
-                                 (b4 * time * infoff) + (b5 * time * temp1) +
-                                 (b6 * infoff * temp1) + (b7 * time * infoff * temp1)),
-             prediction2 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp2) +
-                                 (b4 * time * infoff) + (b5 * time * temp2) +
-                                 (b6 * infoff * temp2) + (b7 * time * infoff * temp2)),
-             prediction3 = exp(b0 + (b1 * time) + (b2 * infoff) + (b3 * temp3) +
-                                 (b4 * time * infoff) + (b5 * time * temp3) +
-                                 (b6 * infoff * temp3) + (b7 * time * infoff * temp3)),
+      mutate(prediction1 = exp(b0 + (b1 * time) + (b2 * infoff_t) + (b3 * temp1) +
+                                 (b4 * time * infoff_t) + (b5 * time * temp1) +
+                                 (b6 * infoff_t * temp1) + (b7 * time * infoff_t * temp1)),
+             prediction2 = exp(b0 + (b1 * time) + (b2 * infoff_t) + (b3 * temp2) +
+                                 (b4 * time * infoff_t) + (b5 * time * temp2) +
+                                 (b6 * infoff_t * temp2) + (b7 * time * infoff_t * temp2)),
+             prediction3 = exp(b0 + (b1 * time) + (b2 * infoff_t) + (b3 * temp3) +
+                                 (b4 * time * infoff_t) + (b5 * time * temp3) +
+                                 (b6 * infoff_t * temp3) + (b7 * time * infoff_t * temp3)),
              HWA = 'no_infest'
       )
     prop_tabX$noinf1[i] <- no_infes$prediction1
