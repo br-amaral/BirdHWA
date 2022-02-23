@@ -1,10 +1,6 @@
 
 
 
-
-
-
-
 COEFMAT_PATH <- glue("data/coef_species.csv")
 INTERCEPT_PATH <- glue("data/intercepts.csv")
 TEMPQUANT_PATH <- glue("data/tempquant.csv")
@@ -49,7 +45,9 @@ for(k in 1:length(colsindex)){
 yrmod <- pmat %>% 
   select(species, model, year) %>% 
   filter(!is.na(species)) %>% 
-  saveRDS(file = "data/models_res/yrmod.rds")
+  mutate(species2 = substr(species, 1, 4)) %>% 
+  dplyr::select(-species) %>% 
+  write_csv(file = "data/models_res/yrmod.csv")
 
 ## plots
 
