@@ -19,6 +19,7 @@ library(sp)
 
 STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
+INFESTATIONS_PATH2 <- "data/fips_infes2.csv"
 WEATHER_PATH <- "data/src/weather.csv"
 LATLONG_PATH <- "data/src/route_coor.csv"
 HEXAGON_PATH <- "data/route_hex.rds"
@@ -112,6 +113,7 @@ BirdHWA <- BirdHWA %>%
 ## Combine data sets: add temperature data -------------------
 # temperature data is in °C * 10
 climate <- raster::getData('worldclim', var = 'bio', res = 2.5)
+# saveRDS(climate, file = "data/climate.rds")
 clim <- climate[[c(6,11)]]
 names(clim) <- c("minTemp","meanTemp")   ## Minimum and Mean Temperature of Coldest Quarter
 

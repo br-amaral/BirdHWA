@@ -13,18 +13,17 @@ offset <- 2
 ## Simulate bird numbers with existing covariate data -------------------------------
 BIRDtab <- readRDS(glue("data/species/{species}.rds"))
 
-formula1 <- SpeciesTotal ~ 1 + 
+formula3 <- SpeciesTotal ~ 1 + 
   year_offset + 
-  infoff +
   year_offset : infoff +
   NewObserver +
   temp_min_scale +
   temp_min_scale : year_offset +
-  temp_min_scale : infoff +
   temp_min_scale : infoff : year_offset +
   f(ObserverRoute, model="iid") + 
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
+
 
 hex.adj <- paste0("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/hexmap.graph")
 
@@ -61,7 +60,7 @@ intercept[1,1] <- 'real'
 year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
   year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
 
-modres <- inla(formula1, family="poisson", data=X, 
+modres <- inla(formula3, family="poisson", data=X, 
              control.predictor=list(compute=TRUE), 
              control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
 
@@ -104,6 +103,11 @@ g3 <- modres$summary.random$hexID[,1:2] %>%
 
 betas <- as.numeric(c(b1$mean, b2$mean, b8$mean, b4$mean,
                       b3$mean, b5$mean, b6$mean, b7$mean))
+for(i in 1:length(betas)){
+  if(is.na(betas[i])){
+    betas[i] <- 0
+  }
+}
 
 lambda <- exp(b0$mean + X2 %*% betas +
                 Z1 %*% g1 +    #X$ObserverRoute
@@ -120,7 +124,7 @@ for(i in 1:sims+1){
   BIRDx <- cbind(y, X3)
   colnames(BIRDx)[1] <- "SpeciesTotal"
   
-  m1in <- inla(formula1, family="poisson", data=BIRDx, 
+  m1in <- inla(formula3, family="poisson", data=BIRDx, 
                control.predictor=list(compute=TRUE), 
                control.compute=list(waic=TRUE, dic=TRUE, cpo=TRUE))
   
@@ -149,7 +153,7 @@ for(i in 1:sims+1){
                    infoff.temp_min_scale,
                    year_offset.infoff.temp_min_scale)
   
-  name3 <- glue("data/models_res/{species}/premsims2.rds")
+  name3 <- glue("data/models_resnew/{species}/premsims.rds")
   
   write_rds(premperm, file = name3)
 
@@ -178,14 +182,22 @@ year_offset.temp_min_scale$par2 <- "B5"
 infoff.temp_min_scale$par2 <- "B6"
 year_offset.infoff.temp_min_scale$par2 <- "B7"
 
-coefs <- plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
+coefs <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
                   year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
 
-saveRDS(plot_tib, file = glue("data/models_res/{species}/sims{species}.rds", sep= ""))  
+for(i in 1:nrow(coefs)){
+  if(is.na(coefs$mean[i])){
+    coefs$mean[i] <- 0
+  }
+}
+
+plot_tib <- coefs
+
+saveRDS(plot_tib, file = glue("data/models_resnew/{species}/sims{species}.rds", sep= ""))  
 ## just plotting!   -------------------------
 species <- "HETH"
 
-coefs <- plot_tib <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_res/HETH/simsHETH.rds")
+coefs <- plot_tib <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_resnew/HETH/simsHETH.rds")
 
 TEMPQUANT_PATH <- glue("data/tempquant.csv")
 
@@ -319,7 +331,8 @@ ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
              linetype = "dotted",
              size = 1) +
   #geom_point(aes(shape = temp, color = temp), size = 2) +
-  geom_boxplot() + 
+  geom_violin(aes(y = reorder(sps_temp,desc(orde)), x = pop202, color = temp))+
+  geom_boxplot(width=0.1) + 
   # facet_wrap(~temp) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
@@ -339,6 +352,12 @@ ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
   geom_point(data = master_full_per, aes(y = sps_temp, x = pop202,
                                          shape = temp2, color = temp2
   ), size = 3) +
-  labs(title="Simulation") #+
+  labs(title="Simulation") +
+  geom_vline(xintercept = -0.3,
+             col = "gray43",
+             size = 1) +
+  geom_vline(xintercept = 0.3,
+             col = "gray43",
+             size = 1)
   #coord_flip() +
   #scale_y_discrete(limits=rev)

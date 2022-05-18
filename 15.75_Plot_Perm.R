@@ -5,23 +5,28 @@ library(glue)
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 sps_list <- read_csv(SPECIES_DATA_PATH)
 order <- rev(rep(c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
-           "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WOTH"), each = 3))
+                   "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WOTH"), each = 3))
 
 yrmod <- read_csv(file = "data/modyear.csv") 
 
 # sensitivity    -----------
 sensi_pro <- function(species) {
-  COEF_PATH_SENSI <- glue("data/models_resnew/{species}/sensi/coefs_{species}.rds")
-  COEF_PATH <- glue("data/models_resnew/{species}/{species}_fullmodel.rds")
+  COEF_PATH_SENSI <- glue("data/models_resnew/{species}/perm/coefs_{species}.rds")
+  COEF_PATH <- glue("data/models_resnew/{species}/perm/coefs_{species}.rds", sep= "")#glue("data/models_resnew/{species}/{species}_fullmodel.rds")
   
-  plot_tib <- readRDS(COEF_PATH_SENSI)
+  plot_tib <- readRDS(COEF_PATH_SENSI) 
   
   plot_tib2 <- plot_tib %>% 
-    filter(RouteId == "full")
+    filter(mod == "full") %>% 
+    mutate(mod2 = 0)
   
   plot_tib3 <- plot_tib %>% 
-    filter(!RouteId == "full")
- 
+    filter(!mod == "full")  %>% 
+    mutate(mod2 = NA)
+  plot_tib3$mod2 <- rep(seq(1:1000), (nrow(plot_tib3)/1000))
+  
+  plot_tib <- rbind(plot_tib2, plot_tib3)
+  
   ggplot(data = plot_tib3, aes(x = par2, y = mean)) +
     #geom_jitter(col = "gray") +
     geom_boxplot() +
@@ -37,10 +42,10 @@ sensi_pro <- function(species) {
   
   # pop change
   plot_tib_per <- plot_tib %>% 
-    arrange(RouteId) %>% 
+    arrange(mod2) %>% 
     pivot_wider(names_from = par2, values_from = mean)
   for(i in 1:nrow(plot_tib_per)){
-    for(j in 5:13){
+    for(j in 6:ncol(plot_tib_per)){
       if(is.na(plot_tib_per[i,j])) {plot_tib_per[i,j] <- 0}
     }
   }
@@ -49,13 +54,13 @@ sensi_pro <- function(species) {
   plot_tib_per$value <- NA
   
   for(i in 1:nrow(plot_tib_per)){
-    plot_tib_per$value[i] <- sum(plot_tib_per[i,5:13])
+    plot_tib_per$value[i] <- sum(plot_tib_per[i,6:(ncol(plot_tib_per)-1)])
   }
   
   plot_tib_per <- plot_tib_per %>% 
-    select(RouteId, low, up, par, value)
+    select(mod, mod2, low, up, par, value)
   
-  routes <- sort(unique(plot_tib_per$RouteId))
+  mods <- seq(0,1000,1)
   
   # template for predictions
   preds <- rbind(
@@ -68,23 +73,25 @@ sensi_pro <- function(species) {
   preds$prop <- preds$prediction <- NA
   preds$species <- as.character(species)
   
-  routes_change <- as.data.frame(matrix(NA, ncol = 4, nrow = length(routes)))
-  colnames(routes_change) <- c("RouteId", "t1", "t2", "t3")
-  routes_change$RouteId <- routes
+  mods_change <- as.data.frame(matrix(NA, ncol = 4, nrow = length(mods)))
+  colnames(mods_change) <- c("perm", "t1", "t2", "t3")
+  mods_change$perm <- mods
+  mods_change$mod2 <- NA
   
-  for(i in 1:length(routes)){
+  for(k in 1:length(mods + 1)){
     
-    route <- routes[i]
+    mod_ <- mods[k]
     
-    pars_tib <- plot_tib_per %>% 
-      filter(RouteId == route) %>% 
+    pars_tib <- plot_tib_per[which(plot_tib_per$mod2 == mod_),] %>% 
+      #filter(mod2 == mod) %>% 
       pivot_wider(names_from = par, values_from = value) %>% 
-      select(-c(RouteId, low, up))
+      select(-c(mod, mod2, low, up))
     
     pars_tib <- colSums(pars_tib, na.rm= T)
     
     pars_tib <- as.data.frame(t(pars_tib))
     
+    b0 <- b1 <- b2 <- b3 <- b4 <- b5 <- b6 <- b7 <- 0
     ifelse(!is.na(pars_tib$intercept), b0 <- pars_tib$intercept, b0 <- 0)
     ifelse(!is.na(pars_tib$year_offset), b1 <- pars_tib$year_offset, b1 <- 0)
     ifelse(!is.na(pars_tib$infoff), b2 <- pars_tib$infoff, b2 <- 0)
@@ -121,18 +128,20 @@ sensi_pro <- function(species) {
     sps_preds3 <- sps_preds2 %>% 
       filter(HWA == "infest")   ## get only a copy from prop
     
-    routes_change[i,2:4] <- t(sps_preds3$prop)
-    print(i) 
+    mods_change[k,2:4] <- t(sps_preds3$prop)
+    mods_change$mod2[k] <- mods[k]
+    
+    #print(i) 
   }
-  routes_change2 <- routes_change %>%
+  mods_change2 <- mods_change %>%
     pivot_longer(`t1`:`t3`, names_to = "temp", values_to = "prop",
                  names_transform = list(Year = as.numeric),
                  values_ptypes = list(Infested = logical())) 
-  routes_change2$species <- as.character(species)
+  mods_change2$species <- as.character(species)
   
-  assign(glue("sen_prop_{species}"), routes_change2)
+  assign(glue("per_prop_{species}"), mods_change2)
   
-  return(get(glue("sen_prop_{species}")))
+  return(get(glue("per_prop_{species}")))
 }
 
 a <- sensi_pro(sps_list[1,]) %>% 
@@ -168,10 +177,10 @@ master_pro <- rbind(m,q,k,n,h,l,o,f,e,d,c,b,a,g)  %>%
   mutate(ord = as.character(ord))
 
 master_full <- master_pro %>% 
-  filter(RouteId == "full") 
+  filter(perm == 0) 
 
 master_pro <- master_pro %>% 
-  filter(RouteId != "full") 
+  filter(perm != 0) 
 
 master_full$temp2 <- NA
 for(i in 1:nrow(master_full)){
@@ -181,7 +190,7 @@ for(i in 1:nrow(master_full)){
 }
 
 master_pro2 <- master_pro %>% 
-  select(RouteId, prop, species, temp) %>% 
+  select(perm, prop, species, temp) %>% 
   unite(sps_temp, species:temp, remove = FALSE)
 
 temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>% 
@@ -195,11 +204,11 @@ master_full2 <- left_join(master_full, temp_order, by = "temp") %>%
 
 facs <- master_full2$sps_temp
 master_full2$sps_temp <- factor(master_full2$sps_temp, 
-                               levels = c("WOTH_t1", "WOTH_t2", "WOTH_t3", "WEWA_t1", "WEWA_t2", "WEWA_t3", "WBNU_t1", "WBNU_t2", "WBNU_t3",
-                                          "SCTA_t1", "SCTA_t2", "SCTA_t3", "REVI_t1", "REVI_t2", "REVI_t3", "EAPH_t1", "EAPH_t2", "EAPH_t3",
-                                          "CERW_t1", "CERW_t2", "CERW_t3", "BLJA_t1", "BLJA_t2", "BLJA_t3", "RBNU_t1", "RBNU_t2", "RBNU_t3",
-                                          "MAWA_t1", "MAWA_t2", "MAWA_t3", "HETH_t1", "HETH_t2", "HETH_t3", "BTNW_t1", "BTNW_t2", "BTNW_t3",
-                                          "BLBW_t1", "BLBW_t2", "BLBW_t3", "BHVI_t1", "BHVI_t2", "BHVI_t3", "ACFL_t1", "ACFL_t2", "ACFL_t3"))
+                                levels = c("WOTH_t1", "WOTH_t2", "WOTH_t3", "WEWA_t1", "WEWA_t2", "WEWA_t3", "WBNU_t1", "WBNU_t2", "WBNU_t3",
+                                           "SCTA_t1", "SCTA_t2", "SCTA_t3", "REVI_t1", "REVI_t2", "REVI_t3", "EAPH_t1", "EAPH_t2", "EAPH_t3",
+                                           "CERW_t1", "CERW_t2", "CERW_t3", "BLJA_t1", "BLJA_t2", "BLJA_t3", "RBNU_t1", "RBNU_t2", "RBNU_t3",
+                                           "MAWA_t1", "MAWA_t2", "MAWA_t3", "HETH_t1", "HETH_t2", "HETH_t3", "BTNW_t1", "BTNW_t2", "BTNW_t3",
+                                           "BLBW_t1", "BLBW_t2", "BLBW_t3", "BHVI_t1", "BHVI_t2", "BHVI_t3", "ACFL_t1", "ACFL_t2", "ACFL_t3"))
 master_pro2$sps_temp <- factor(master_pro2$sps_temp, levels = facs)
 
 ggplot(data = master_full2, aes(x= sps_temp, y = prop,
@@ -257,7 +266,7 @@ master_pro3 <- master_pro2 %>%
 
 master_pro_full <- rbind(master_full3, master_pro3) %>% 
   group_by(sps_temp) #%>%
-  #mutate(across(contains("prop"),scale))
+#mutate(across(contains("prop"),scale))
 
 master_full3 <- master_pro_full %>% 
   filter(tab == "full")
@@ -334,7 +343,7 @@ pred_per_sps <- function(species){
   
   coefs3 <- coefs %>% 
     filter(mod == "full") 
-    
+  
   coefs2 <- coefs2 %>%
     select(par, mean) %>% 
     group_by(par) %>%
@@ -463,10 +472,9 @@ per11 <- pred_per_sps(trimws(sps_list[11,]))[[1]]
 per12 <- pred_per_sps(trimws(sps_list[12,]))[[1]]
 per13 <- pred_per_sps(trimws(sps_list[13,]))[[1]]
 per14 <- pred_per_sps(trimws(sps_list[14,]))[[1]]
-per15 <- pred_per_sps(trimws(sps_list[15,]))[[1]]
 
 prop_tabX3 <- rbind(per1, per2, per3, per4, per5, per6, per7, per8, per9, 
-                    per10, per11, per12, per13, per14, per15) %>% 
+                    per10, per11, per12, per13, per14) %>% 
   arrange(match(Species, master_full2$sps_temp))
 prop_tabX3 <- prop_tabX3 %>% 
   mutate(orde = seq(1:nrow(prop_tabX3)),
@@ -486,46 +494,99 @@ full11 <- pred_per_sps(trimws(sps_list[11,]))[[2]]
 full12 <- pred_per_sps(trimws(sps_list[12,]))[[2]]
 full13 <- pred_per_sps(trimws(sps_list[13,]))[[2]]
 full14 <- pred_per_sps(trimws(sps_list[14,]))[[2]]
-full15 <- pred_per_sps(trimws(sps_list[15,]))[[2]]
 
 master_full_per <- rbind(full1, full2, full3, full4, full5, full6, full7, full8, full9, 
-                    full10, full11, full12, full13, full14, full15) %>% 
+                         full10, full11, full12, full13, full14) %>% 
   arrange(match(Species, master_full2$sps_temp))
 master_full_per <- master_full_per %>% 
   mutate(orde = seq(1:nrow(master_full_per)),
          temp2 = glue("t{temp}"))
 
-ggplot(data = prop_tabX3, aes(y = sps_temp, x = pop202)) +
-    geom_boxplot() + 
-    #geom_point(aes(shape = temp), colour = "grey", size = 2) +
-    geom_vline(xintercept = 0, col = "gray43",
-               linetype = "dotted", size = 1) +
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          legend.title = element_blank(),
-          legend.position = "right",
-          legend.justification = "right",
-          #legend.margin=margin(0,0,0,0),
-          #legend.box.margin=margin(-5,0,-5,-7),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          legend.title.align = 0.5) +
-    geom_point(data = master_full_per, 
-               aes(y = sps_temp, x = pop202,
-                   shape = temp2, color = temp2), size = 2) +
-    scale_shape_manual(values=c("tt1" = 16,
-                                "tt2" = 17,
-                                "tt3" = 15)) +
-    scale_fill_manual(values=c("olivedrab4",
-                               "violetred",
-                               "darkorange3")) +
-    scale_color_manual(values = c("tt1" = "olivedrab3",
-                                  "tt2" = "palevioletred2",
-                                  "tt3" = "tan1"),
-                       labels = c("tt1" = "0.2",
-                                  "tt2" = "0.5",
-                                  "tt3" = "0.8"),
-                       name = "Temperature\nQuantiles") +
-    labs(title="Permutation analysis")
+ggplot(data = prop_tabX3 %>% filter(Species != "CERW"), aes(y = sps_temp, x = pop202)) +
+  geom_boxplot() + 
+  #geom_point(aes(shape = temp), colour = "grey", size = 2) +
+  geom_vline(xintercept = 0, col = "gray43",
+             linetype = "dotted", size = 1) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        legend.title.align = 0.5) +
+  geom_point(data = master_full_per, 
+             aes(y = sps_temp, x = pop202,
+                 shape = temp2, color = temp2), size = 2) +
+  scale_shape_manual(values=c("tt1" = 16,
+                              "tt2" = 17,
+                              "tt3" = 15)) +
+  scale_fill_manual(values=c("olivedrab4",
+                             "violetred",
+                             "darkorange3")) +
+  scale_color_manual(values = c("tt1" = "olivedrab3",
+                                "tt2" = "palevioletred2",
+                                "tt3" = "tan1"),
+                     labels = c("tt1" = "0.2",
+                                "tt2" = "0.5",
+                                "tt3" = "0.8"),
+                     name = "Temperature\nQuantiles") +
+  labs(title="Permutation analysis")
+
+
+#svg(glue("Figures/sensitivity.svg"), 
+#    width = 9, height = 10)
+
+ggplot(data = prop_tabX3 
+       %>% filter(Species != "CERW")
+       , aes(y = sps_temp, x = pop202)) +
+  geom_vline(xintercept = 0,
+             col = "gray43",
+             linetype = "dotted",
+             size = 0.8) +
+  geom_vline(xintercept = -0.3,
+             col = "gray43",
+             size = 0.8) +
+  geom_vline(xintercept = 0.3,
+             col = "gray43",
+             size = 0.8) +
+  #geom_point(aes(shape = temp, color = temp), size = 2) +
+  geom_boxplot(weight = 10, alpha = 0.7) + 
+  # facet_wrap(~temp) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "right",
+        legend.justification = "right",
+        #legend.margin=margin(0,0,0,0),
+        #legend.box.margin=margin(-5,0,-5,-7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title.align = 0.5,
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
+  #                   limits = c(-3, 1, 0.5)) +
+  geom_point(data = master_full3, aes(y= sps_temp, x = prop,
+                                      shape = temp2, color = temp2), size = 3) +
+  scale_shape_manual(values=c("tt1" = 16,
+                              "tt2" = 17,
+                              "tt3" = 15)) +
+  scale_fill_manual(values=c("olivedrab4",
+                             "violetred",
+                             "darkorange3")) +
+  scale_color_manual(values = c("tt1" = "olivedrab3",
+                                "tt2" = "palevioletred2",
+                                "tt3" = "tan1"),
+                     labels = c("tt1" = "0.2",
+                                "tt2" = "0.5",
+                                "tt3" = "0.8"),
+                     name = "Temperature\nQuantiles") +
+  labs(title="Sensitivity analysis") 
+
+#dev.off()

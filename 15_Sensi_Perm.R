@@ -8,8 +8,8 @@
 #        data/species/{species}.rds
 #        5_formulasModels.R (sourcing)
 # Output: 
-#        data/models_res/{species} (folder)
-#        data/models_res/{species}/{name}.rds (files)
+#        data/models_resnew/{species} (folder)
+#        data/models_resnew/{species}/{name}.rds (files)
 
 library(INLA)
 library(tidyverse)
@@ -22,7 +22,9 @@ sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 
 # best model and lag for each species info
-yrmod <- read_csv(file = "data/models_res/yrmod.csv") 
+yrmod <- read_csv(file = "data/modyear.csv") %>% 
+  rename(species2 = species,
+         model = mod)
 
 create_data <- function(offset2, BIRDx) {
   # Create an year offset for that species 
@@ -141,8 +143,9 @@ run_sensi <- function(species) {
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
+  #routes <- routes[-189,]
   
-  dir.create(glue("data/models_res/{species}/sensi"))
+  dir.create(glue("data/models_resnew/{species}/sensi"))
   intercept <- matrix(NA, nrow = nrow(routes), ncol = 3) %>%
     as_tibble()
   
@@ -161,6 +164,10 @@ run_sensi <- function(species) {
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   off <- offsets
   
+  routes <- routes[-which(routes$RouteId == 90005),]
+  routes <- routes[-which(routes$RouteId == 90006),]
+  
+  
   for(i in 1:nrow(routes)){
     
     BIRDtab3 <- BIRDtab2[which(BIRDtab2$RouteId != as.character(routes[i,1])),]
@@ -169,7 +176,7 @@ run_sensi <- function(species) {
     name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
-    name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
+    name2 <- glue("data/models_resnew/{species}/sensi/{name}.rds", sep= "")
     
     coefs <- resu$summary.fixed[,c(1,3,5)]
     
@@ -203,7 +210,7 @@ run_sensi <- function(species) {
                       year_offset.infoff.temp_min_scale
     )
     
-    name3 <- glue("data/models_res/{species}/sensi/premsensi.rds")
+    name3 <- glue("data/models_resnew/{species}/sensi/premsensi.rds")
     
     write_rds(premsensi, file = name3)
     
@@ -258,7 +265,7 @@ run_sensi <- function(species) {
   plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
                     year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
   
-  saveRDS(plot_tib, file = glue("data/models_res/{species}/sensi/coefs_{species}.rds", sep= ""))
+  saveRDS(plot_tib, file = glue("data/models_resnew/{species}/sensi/coefs_{species}.rds", sep= ""))
   
   }
 
@@ -281,7 +288,7 @@ run_perm <- function(species, perm) {
   
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
-  dir.create(glue("data/models_res/{species}/perm"))
+  dir.create(glue("data/models_resnew/{species}/perm"))
   
   intercept <- matrix(NA, nrow = perm, ncol = 4) %>%
     as_tibble()
@@ -302,7 +309,7 @@ run_perm <- function(species, perm) {
   
   print(species)
   
-  for(i in 1:perm){
+  for(i in 555:perm){
     
     formula <- formulas[[mod]]
     
@@ -312,7 +319,7 @@ run_perm <- function(species, perm) {
     name <- glue("{species}_model_{off}yrs_perm{i}")
     #assign(name, resu)
     print(i)
-    #name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
+    #name2 <- glue("data/models_resnew/{species}/perm/{name}.rds", sep= "")
     
     coefs <- resu$summary.fixed[ ,c(1,3,5)]
     
@@ -347,7 +354,7 @@ run_perm <- function(species, perm) {
                      year_offset.infoff.temp_min_scale
     )
     
-    name3 <- glue("data/models_res/{species}/perm/premperm.rds")
+    name3 <- glue("data/models_resnew/{species}/perm/premperm.rds")
     
     write_rds(premperm, file = name3)
     
@@ -422,16 +429,21 @@ run_perm <- function(species, perm) {
     plot_tib <- rbind(plot_tib, get(eval(parse(text =coefs_mod$get_p[i]))))
   }
   
-  saveRDS(plot_tib, file = glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= ""))  
-  #saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
+  saveRDS(plot_tib, file = glue("data/models_resnew/{species}/perm/coefs_{species}.rds", sep= ""))  
+  #saveRDS(pt, file = glue("data/models_resnew/{species}/perm/permplot_{species}.rds", sep= ""))  
   
 }
 
 for(i in 1:nrow(sps_list)){
   species <- sps_list[i,]
-  run_sensi(species = species)
-  run_perm(species = species, perm = 1000)
+  #run_sensi(species = species)
+  run_perm(species = species, perm = 1000) 
 }
 
+# BHVI permute 554
+# blbw permute 54
+# btnw 615
 
+
+#a <- purrr::map2(premsensi2,premsensi1,rbind)
 

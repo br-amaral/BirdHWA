@@ -8,44 +8,27 @@ library(gridExtra)
 library(egg)
 
 SPSLIST_PATH <- glue("data/src/sps_list.csv")
-#SPSPRED_PATH <- glue("data/preds/preds_{species}.rds")
+SPSPRED_PATH <- glue("data/models_resnew/")
 
 spslist <- read_csv(SPSLIST_PATH)
 
-preds_WEWA <- readRDS("data/preds/preds_WEWA.rds") %>% 
-  mutate(species = "WEWA")
-preds_REVI <- readRDS("data/preds/preds_REVI.rds") %>% 
-  mutate(species = "REVI")
-preds_BLJA <- readRDS("data/preds/preds_BLJA.rds") %>% 
-  mutate(species = "BLJA")
-preds_SCTA <- readRDS("data/preds/preds_SCTA.rds") %>% 
-  mutate(species = "SCTA")
-preds_WOTH <- readRDS("data/preds/preds_WOTH.rds") %>% 
-  mutate(species = "WOTH")
-preds_CERW <- readRDS("data/preds/preds_CERW.rds") %>% 
-  mutate(species = "CERW")
-preds_WBNU <- readRDS("data/preds/preds_WBNU.rds") %>% 
-  mutate(species = "WBNU")
-preds_EAPH <- readRDS("data/preds/preds_EAPH.rds") %>% 
-  mutate(species = "EAPH")
-preds_ACFL <- readRDS("data/preds/preds_ACFL.rds") %>% 
-  mutate(species = "ACFL")
-preds_RBNU <- readRDS("data/preds/preds_RBNU.rds") %>% 
-  mutate(species = "RBNU")
-preds_MAWA <- readRDS("data/preds/preds_MAWA.rds") %>% 
-  mutate(species = "MAWA")
-preds_HETH <- readRDS("data/preds/preds_HETH.rds") %>% 
-  mutate(species = "HETH")
-preds_BLBW <- readRDS("data/preds/preds_BLBW.rds") %>% 
-  mutate(species = "BLBW")
-preds_BHVI <- readRDS("data/preds/preds_BHVI.rds") %>% 
-  mutate(species = "BHVI")
-preds_BTNW <- readRDS("data/preds/preds_BTNW.rds") %>% 
-  mutate(species = "BTNW")
+sps_preds <- matrix(ncol= 8, nrow = 0)
+colnames(sps_preds) <- c("year","infoff_t","year_off_t","temp_t","prediction","HWA","temp","species" )
+sps_preds <- as_tibble(sps_preds)
+ts <- c("t1","t2","t3")
 
-sps_preds <- rbind(preds_WEWA, preds_REVI, preds_BLJA, preds_SCTA, preds_WOTH, preds_CERW, preds_WBNU,
-                   preds_EAPH, preds_ACFL, preds_RBNU, preds_MAWA, preds_HETH, preds_BLBW, preds_BHVI,
-                   preds_BTNW)
+for(i in 1:nrow(spslist)){
+  spp <- spslist[i,]
+  for(j in 1:3){
+    t <- ts[j]
+    a <- read_csv(glue(SPSPRED_PATH,"{spp}/{spp}_{t}preds.csv")) %>% 
+      dplyr::select(year, infoff_t, year_off_t, temp_t, prediction, HWA) %>% 
+      mutate(temp = t,
+             species = pull(spp)) 
+    sps_preds <- rbind(sps_preds,a)
+  }
+  rm(spp)
+}
 
 sps_preds2 <- sps_preds %>% 
   filter(year == 20)
@@ -58,25 +41,41 @@ for(i in seq(from=1, to=nrow(sps_preds2), by=2)) {
 sps_preds3 <- sps_preds2 %>% 
   filter(HWA == "infest")   ## get only a copy from prop
 
+order <- rev(c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
+               "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WOTH"))
+
+sps_preds3$species <- factor(sps_preds3$species, levels = order)
+
+svg(glue("Figures/percent_plot.svg"), 
+    width = 8, height = 9)
 ggplot(data = sps_preds3, aes(y= species, x = prop)) +
   geom_vline(xintercept = 0,
              col = "gray43",
              linetype = "dotted",
-             size = 1) +
-  geom_point(aes(shape = temp, color = temp), size = 2) +
+             size = 0.8) +
+  geom_vline(xintercept = -0.3,
+             col = "gray43",
+             size = 0.8) +
+  geom_vline(xintercept = 0.3,
+             col = "gray43",
+             size = 0.8) +
+  geom_point(aes(shape = temp, color = temp), size = 3) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 12),
         #legend.title = element_blank(),
         legend.position = "right",
         legend.justification = "right",
+        legend.text=element_text(size=12),
+        legend.title=element_text(size=12),
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.title.align = 0.5) +
-  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
-  #                   limits = c(-3, 1, 0.5)) +
+  scale_x_continuous(breaks = seq(-3, 1, 1),
+                     limits = c(-3, 1, 1)) +
   scale_color_manual(values = c("t1" = "blue4",
                                 "t2" = "violetred",
                                 "t3" = "darkorange3"),
@@ -84,3 +83,4 @@ ggplot(data = sps_preds3, aes(y= species, x = prop)) +
                                 "t2" = "0.5",
                                 "t3" = "0.8"),
                      name = "Temperature\nQuantiles")
+dev.off()
