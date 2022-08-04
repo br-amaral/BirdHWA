@@ -8,23 +8,23 @@
 #        data/species/{species}.rds
 #        5_formulasModels.R (sourcing)
 # Output: 
-#        data/models_res/{species} (folder)
-#        data/models_res/{species}/{name}.rds (files)
+#        data/models_resnew/{species} (folder)
+#        data/models_resnew/{species}/{name}.rds (files)
 
 library(INLA)
 library(tidyverse)
 library(glue)
-
-#species <- "HETH"
-offsets <- 2
-mod <- 1
 
 set.seed(10)
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 source("5_formulasModels.R")
 sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
-formula <- get(glue("formula{mod}"))
+
+# best model and lag for each species info
+yrmod <- read_csv(file = "data/modyear.csv") %>% 
+  rename(species2 = species,
+         model = mod)
 
 create_data <- function(offset2, BIRDx) {
   # Create an year offset for that species 
@@ -122,15 +122,30 @@ run_model <- function(BIRDx_sub, formula) {
   return(model)
 }
 
-run_sensi <- function(species, offsets) {
+run_sensi <- function(species) {
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
+  
+  species <- pull(species)
+  
+  offsets <- yrmod %>% 
+    filter(species2 == species) %>% 
+    dplyr::select(year) %>% 
+    pull()
+  
+  mod <- yrmod %>% 
+    filter(species2 == species) %>% 
+    dplyr::select(model) %>% 
+    pull()
+  
+  formula <- formulas[[mod]]
+  
   BIRDtab2 <- create_data(offsets, BIRDtab)
-  off <- offsets
   
   routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
+  #routes <- routes[-189,]
   
-  dir.create(glue("data/models_res/{species}/sensi"))
+  dir.create(glue("data/models_resnew/{species}/sensi"))
   intercept <- matrix(NA, nrow = nrow(routes), ncol = 3) %>%
     as_tibble()
   
@@ -147,6 +162,11 @@ run_sensi <- function(species, offsets) {
   
   year_offset <- infoff <- NewObserver <- temp_min_scale <- year_offset.infoff <-
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
+  off <- offsets
+  
+  routes <- routes[-which(routes$RouteId == 90005),]
+  routes <- routes[-which(routes$RouteId == 90006),]
+  
   
   for(i in 1:nrow(routes)){
     
@@ -156,7 +176,7 @@ run_sensi <- function(species, offsets) {
     name <- glue("{species}_model_{off}yrs_{routes[i,1]}")
     assign(name, resu)
     print(name)
-    name2 <- glue("data/models_res/{species}/sensi/{name}.rds", sep= "")
+    name2 <- glue("data/models_resnew/{species}/sensi/{name}.rds", sep= "")
     
     coefs <- resu$summary.fixed[,c(1,3,5)]
     
@@ -165,11 +185,20 @@ run_sensi <- function(species, offsets) {
     infoff[i,2:4] <- coefs["infoff",]
     NewObserver[i,2:4] <- coefs["NewObserverTRUE",]
     temp_min_scale[i,2:4] <- coefs["temp_min_scale",]
-    year_offset.infoff[i,2:4] <- coefs["year_offset:infoff",]
-    year_offset.temp_min_scale[i,2:4] <- coefs["year_offset:temp_min_scale",]
-    infoff.temp_min_scale[i,2:4] <- coefs["infoff:temp_min_scale",]
-    year_offset.infoff.temp_min_scale[i,2:4] <- coefs["year_offset:infoff:temp_min_scale",]
-    
+    year_offset.infoff[i,2:4] <-  ifelse(!is.na(sum(coefs["year_offset:infoff",])), coefs["year_offset:infoff",], 
+                                         ifelse(!is.na(sum(coefs["infoff:year_offset",])), coefs["infoff:year_offset",], NA))
+    year_offset.temp_min_scale[i,2:4] <- ifelse(!is.na(sum(coefs["year_offset:temp_min_scale",])), coefs["year_offset:temp_min_scale",], 
+                                                ifelse(!is.na(sum(coefs["temp_min_scale:year_offset",])), coefs["temp_min_scale:year_offset",], NA))
+    infoff.temp_min_scale[i,2:4] <- ifelse(!is.na(sum(coefs["infoff:temp_min_scale",])), coefs["infoff:temp_min_scale",], 
+                                                ifelse(!is.na(sum(coefs["temp_min_scale:infoff",])), coefs["temp_min_scale:infoff",], NA))
+    year_offset.infoff.temp_min_scale[i,2:4] <- 
+      ifelse(!is.na(sum(coefs["year_offset:temp_min_scale:infoff",])), coefs["year_offset:temp_min_scale:infoff",], 
+             ifelse(!is.na(sum(coefs["year_offset:infoff:temp_min_scale",])), coefs["year_offset:infoff:temp_min_scale",],
+                    ifelse(!is.na(sum(coefs["temp_min_scale:year_offset:infoff",])), coefs["temp_min_scale:year_offset:infoff",],
+                           ifelse(!is.na(sum(coefs["temp_min_scale:infoff:year_offset",])), coefs["temp_min_scale:infoff:year_offset",],
+                                  ifelse(!is.na(sum(coefs["infoff:temp_min_scale:year_offset",])), coefs["infoff:temp_min_scale:year_offset",],
+                                         ifelse(!is.na(sum(coefs["infoff:temp_min_scale:infoff",])), coefs["infoff:temp_min_scale:infoff",], NA
+                                         ))))))
     premsensi <- list(intercept,
                       year_offset,
                       infoff,
@@ -181,7 +210,7 @@ run_sensi <- function(species, offsets) {
                       year_offset.infoff.temp_min_scale
     )
     
-    name3 <- glue("data/models_res/{species}/sensi/premsensi.rds")
+    name3 <- glue("data/models_resnew/{species}/sensi/premsensi.rds")
     
     write_rds(premsensi, file = name3)
     
@@ -198,10 +227,20 @@ run_sensi <- function(species, offsets) {
   infoff[(nrow(routes)) + 1,2:4] <- coefsf["infoff",]
   NewObserver[(nrow(routes)) + 1,2:4] <- coefsf["NewObserverTRUE",]
   temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["temp_min_scale",]
-  year_offset.infoff[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:infoff",]
-  year_offset.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:temp_min_scale",]
-  infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["infoff:temp_min_scale",]
-  year_offset.infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- coefsf["year_offset:infoff:temp_min_scale",]
+  year_offset.infoff[(nrow(routes)) + 1,2:4] <-  ifelse(!is.na(sum(coefsf["year_offset:infoff",])), coefsf["year_offset:infoff",], 
+                                               ifelse(!is.na(sum(coefsf["infoff:year_offset",])), coefsf["infoff:year_offset",], NA))
+  year_offset.temp_min_scale[(nrow(routes)) + 1,2:4] <- ifelse(!is.na(sum(coefsf["year_offset:temp_min_scale",])), coefsf["year_offset:temp_min_scale",], 
+                                                      ifelse(!is.na(sum(coefsf["temp_min_scale:year_offset",])), coefsf["temp_min_scale:year_offset",], NA))
+  infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- ifelse(!is.na(sum(coefsf["infoff:temp_min_scale",])), coefsf["infoff:temp_min_scale",],
+                                                 ifelse(!is.na(sum(coefsf["temp_min_scale:infoff",])), coefsf["temp_min_scale:infoff",], NA))
+  year_offset.infoff.temp_min_scale[(nrow(routes)) + 1,2:4] <- 
+    ifelse(!is.na(sum(coefsf["year_offset:temp_min_scale:infoff",])), coefsf["year_offset:temp_min_scale:infoff",], 
+           ifelse(!is.na(sum(coefsf["year_offset:infoff:temp_min_scale",])), coefsf["year_offset:infoff:temp_min_scale",],
+                  ifelse(!is.na(sum(coefsf["temp_min_scale:year_offset:infoff",])), coefsf["temp_min_scale:year_offset:infoff",],
+                         ifelse(!is.na(sum(coefsf["temp_min_scale:infoff:year_offset",])), coefsf["temp_min_scale:infoff:year_offset",],
+                                ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:year_offset",])), coefsf["infoff:temp_min_scale:year_offset",],
+                                       ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:infoff",])), coefsf["infoff:temp_min_scale:infoff",],NA
+                                       ))))))
   
   intercept$par <- "intercept"
   year_offset$par <- "year_offset"
@@ -226,49 +265,39 @@ run_sensi <- function(species, offsets) {
   plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
                     year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
   
-  plot_tib2 <- plot_tib[1:9, ]
-  plot_tib2[1:9, ] <- NA
-  plot_tib2$mean <- coefs$mean
-  plot_tib2$low <- coefs$`0.025quant`
-  plot_tib2$up <- coefs$`0.975quant`
-  plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
+  saveRDS(plot_tib, file = glue("data/models_resnew/{species}/sensi/coefs_{species}.rds", sep= ""))
   
-  saveRDS(plot_tib, file = glue("data/models_res/{species}/sensi/coefs_{species}.rds", sep= ""))
-  
-  ptt <- ggplot(data = plot_tib, aes(x = par2, y = mean)) +
-    geom_jitter(col = "gray") +
-    #geom_errorbar(aes(ymin=low, ymax=up),
-    #              size=.3,    # Thinner lines
-    #              width=.2) 
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          legend.position="none") +
-    ylab("Estimates") +
-    xlab("Coefficients") +
-    geom_point(data = plot_tib2, aes(x = par2, y = mean)) +
-    geom_errorbar(data = plot_tib2, aes(ymin=low, ymax=up),
-                  size=.3, width=0.1) +
-    ggtitle("Sensitivity Analysis")
-  
-  saveRDS(ptt, file = glue("data/models_res/{species}/sensi/sensiplot_{species}.rds", sep= ""))  
-  
-}
+  }
 
-run_perm <- function(species, perm, offsets) {
-  off <- offsets
+run_perm <- function(species, perm) {
+  
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
   BIRDtab <- readRDS(SPECIES_MOD_DAT)
+  
+  species <- pull(species)
+  
+  off <- offsets <- yrmod %>% 
+    filter(species2 == species) %>% 
+    dplyr::select(year) %>% 
+    pull()
+  
+  mod <- yrmod %>% 
+    filter(species2 == species) %>% 
+    dplyr::select(model) %>% 
+    pull()
+  
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
-  # dir.create(glue("data/models_res/{species}/perm"))
+  dir.create(glue("data/models_resnew/{species}/perm"))
   
-  intercept <- matrix(NA, nrow = perm, ncol = 3) %>%
+  intercept <- matrix(NA, nrow = perm, ncol = 4) %>%
     as_tibble()
   
-  colnames(intercept) <- c("mean", "low", "up")
+  colnames(intercept) <- c("mod","mean", "low", "up")
   
   intercept <- intercept %>% 
-    mutate(mean = as.numeric(mean),
+    mutate(mod = "perm",
+           mean = as.numeric(mean),
            low = as.numeric(low),
            up = as.numeric(up))
   intercept <- as.data.frame(intercept)
@@ -280,26 +309,39 @@ run_perm <- function(species, perm, offsets) {
   
   print(species)
   
-  for(i in 1:perm){
+  for(i in 555:perm){
+    
+    formula <- formulas[[mod]]
+    
     BIRDtab3 <- permute_data(offsets, BIRDtab2)
     
     resu <- run_model(BIRDtab3, formula)
     name <- glue("{species}_model_{off}yrs_perm{i}")
     #assign(name, resu)
     print(i)
-    #name2 <- glue("data/models_res/{species}/perm/{name}.rds", sep= "")
+    #name2 <- glue("data/models_resnew/{species}/perm/{name}.rds", sep= "")
     
-    coefs <- resu$summary.fixed[,c(1,3,5)]
+    coefs <- resu$summary.fixed[ ,c(1,3,5)]
     
-    intercept[i,1:3] <- coefs["(Intercept)",]
-    year_offset[i,1:3] <- coefs["year_offset",]
-    infoff[i,1:3] <- coefs["infoff",]
-    NewObserver[i,1:3] <- coefs["NewObserverTRUE",]
-    temp_min_scale[i,1:3] <- coefs["temp_min_scale",]
-    year_offset.infoff[i,1:3] <- coefs["year_offset:infoff",]
-    year_offset.temp_min_scale[i,1:3] <- coefs["year_offset:temp_min_scale",]
-    infoff.temp_min_scale[i,1:3] <- coefs["infoff:temp_min_scale",]
-    year_offset.infoff.temp_min_scale[i,1:3] <- coefs["year_offset:infoff:temp_min_scale",]
+    intercept[i,2:4] <- coefs["(Intercept)",]
+    year_offset[i,2:4] <- coefs["year_offset",]
+    infoff[i,2:4] <- coefs["infoff",]
+    NewObserver[i,2:4] <- coefs["NewObserverTRUE",]
+    temp_min_scale[i,2:4] <- coefs["temp_min_scale",]
+    year_offset.infoff[i,2:4] <-  ifelse(!is.na(sum(coefs["year_offset:infoff",])), coefs["year_offset:infoff",], 
+                                         ifelse(!is.na(sum(coefs["infoff:year_offset",])), coefs["infoff:year_offset",], NA))
+    year_offset.temp_min_scale[i,2:4] <- ifelse(!is.na(sum(coefs["year_offset:temp_min_scale",])), coefs["year_offset:temp_min_scale",], 
+                                                ifelse(!is.na(sum(coefs["temp_min_scale:year_offset",])), coefs["temp_min_scale:year_offset",], NA))
+    infoff.temp_min_scale[i,2:4] <- ifelse(!is.na(sum(coefs["infoff:temp_min_scale",])), coefs["infoff:temp_min_scale",],
+                                           ifelse(!is.na(sum(coefs["temp_min_scale:infoff",])), coefs["temp_min_scale:infoff",], NA))
+    year_offset.infoff.temp_min_scale[i,2:4] <- 
+      ifelse(!is.na(sum(coefs["year_offset:temp_min_scale:infoff",])), coefs["year_offset:temp_min_scale:infoff",], 
+             ifelse(!is.na(sum(coefs["year_offset:infoff:temp_min_scale",])), coefs["year_offset:infoff:temp_min_scale",],
+                    ifelse(!is.na(sum(coefs["temp_min_scale:year_offset:infoff",])), coefs["temp_min_scale:year_offset:infoff",],
+                           ifelse(!is.na(sum(coefs["temp_min_scale:infoff:year_offset",])), coefs["temp_min_scale:infoff:year_offset",],
+                                  ifelse(!is.na(sum(coefs["infoff:temp_min_scale:year_offset",])), coefs["infoff:temp_min_scale:year_offset",],
+                                         ifelse(!is.na(sum(coefs["infoff:temp_min_scale:infoff",])), coefs["infoff:temp_min_scale:infoff",], NA
+                                                 ))))))
     
     premperm <- list(intercept,
                      year_offset,
@@ -312,7 +354,7 @@ run_perm <- function(species, perm, offsets) {
                      year_offset.infoff.temp_min_scale
     )
     
-    name3 <- glue("data/models_res/{species}/perm/premperm.rds")
+    name3 <- glue("data/models_resnew/{species}/perm/premperm.rds")
     
     write_rds(premperm, file = name3)
     
@@ -321,18 +363,31 @@ run_perm <- function(species, perm, offsets) {
     rm(BIRDtab3)
     rm(name)
   }
+  
   resu <- run_model(BIRDtab2, formula)
   coefsf <- resu$summary.fixed[,c(1,3,5)]
   
-  intercept[(perm) + 1,2:4] <- coefsf["(Intercept)",]
-  year_offset[(perm) + 1,2:4] <- coefsf["year_offset",]
-  infoff[(perm) + 1,2:4] <- coefsf["infoff",]
-  NewObserver[(perm) + 1,2:4] <- coefsf["NewObserverTRUE",]
-  temp_min_scale[(perm) + 1,2:4] <- coefsf["temp_min_scale",]
-  year_offset.infoff[(perm) + 1,2:4] <- coefsf["year_offset:infoff",]
-  year_offset.temp_min_scale[(perm) + 1,2:4] <- coefsf["year_offset:temp_min_scale",]
-  infoff.temp_min_scale[(perm) + 1,2:4] <- coefsf["infoff:temp_min_scale",]
-  year_offset.infoff.temp_min_scale[(perm) + 1,2:4] <- coefsf["year_offset:infoff:temp_min_scale",]
+  intercept[(perm) +1,2:4] <- coefsf["(Intercept)",]
+  year_offset[(perm) +1,2:4] <- coefsf["year_offset",]
+  infoff[(perm) +1,2:4] <- coefsf["infoff",]
+  NewObserver[(perm) +1,2:4] <- coefsf["NewObserverTRUE",]
+  temp_min_scale[(perm) +1,2:4] <- coefsf["temp_min_scale",]
+  year_offset.infoff[(perm) +1,2:4] <-  ifelse(!is.na(sum(coefsf["year_offset:infoff",])), coefsf["year_offset:infoff",], 
+                                       ifelse(!is.na(sum(coefsf["infoff:year_offset",])), coefsf["infoff:year_offset",], NA))
+  year_offset.temp_min_scale[(perm) +1,2:4] <- ifelse(!is.na(sum(coefsf["year_offset:temp_min_scale",])), coefsf["year_offset:temp_min_scale",], 
+                                              ifelse(!is.na(sum(coefsf["temp_min_scale:year_offset",])), coefsf["temp_min_scale:year_offset",], NA))
+  infoff.temp_min_scale[(perm) +1,2:4] <- ifelse(!is.na(sum(coefsf["infoff:temp_min_scale",])), coefsf["infoff:temp_min_scale",],
+                                         ifelse(!is.na(sum(coefsf["temp_min_scale:infoff",])), coefsf["temp_min_scale:infoff",], NA))
+  year_offset.infoff.temp_min_scale[(perm) +1,2:4] <- 
+    ifelse(!is.na(sum(coefsf["year_offset:temp_min_scale:infoff",])), coefsf["year_offset:temp_min_scale:infoff",], 
+           ifelse(!is.na(sum(coefsf["year_offset:infoff:temp_min_scale",])), coefsf["year_offset:infoff:temp_min_scale",],
+                  ifelse(!is.na(sum(coefsf["temp_min_scale:year_offset:infoff",])), coefsf["temp_min_scale:year_offset:infoff",],
+                         ifelse(!is.na(sum(coefsf["temp_min_scale:infoff:year_offset",])), coefsf["temp_min_scale:infoff:year_offset",],
+                                ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:year_offset",])), coefsf["infoff:temp_min_scale:year_offset",],
+                                       ifelse(!is.na(sum(coefsf["infoff:temp_min_scale:infoff",])), coefsf["infoff:temp_min_scale:infoff",], NA
+                                       ))))))
+  
+  
   
   intercept$par <- "intercept"
   year_offset$par <- "year_offset"
@@ -354,43 +409,41 @@ run_perm <- function(species, perm, offsets) {
   infoff.temp_min_scale$par2 <- "B6"
   year_offset.infoff.temp_min_scale$par2 <- "B7"
   
-  plot_tib <- rbind(intercept, year_offset, infoff, NewObserver, temp_min_scale, year_offset.infoff,
-                    year_offset.temp_min_scale, infoff.temp_min_scale,  year_offset.infoff.temp_min_scale)
+  coefkey <- as_tibble(matrix(NA, ncol = 2, nrow = 9))
+  coefkey$V1 <- c("intercept", "year_offset", "infoff", "NewObserver", "temp_min_scale",
+                  "year_offset.infoff", "year_offset.temp_min_scale", "infoff.temp_min_scale",
+                  "year_offset.infoff.temp_min_scale")
   
-  plot_tib2 <- plot_tib[1:9,]
-  plot_tib2[1:9,] <- NA
-  plot_tib2$mean <- coefs$mean
-  plot_tib2$low <- coefs$`0.025quant`
-  plot_tib2$up <- coefs$`0.975quant`
-  plot_tib2$par2 <- c("B0", "B1", "B2", "B8", "B4", "B3", "B5", "B6", "B7")
+  coefkey$V2 <- c("(Intercept)", "year_offset", "infoff", "NewObserverTRUE", "temp_min_scale",                
+                  "year_offset:infoff", "year_offset:temp_min_scale", "temp_min_scale:infoff",
+                  "year_offset:temp_min_scale:infoff")
   
-  pt <- ggplot(data = plot_tib, aes(x = par2, y = mean)) +
-    geom_jitter(col = "gray") +
-    #geom_errorbar(aes(ymin=low, ymax=up),
-    #              size=.3,    # Thinner lines
-    #              width=.2) 
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          legend.position="none") +
-    ylab("Estimates") +
-    xlab("Coefficients") +
-    geom_point(data = plot_tib2, aes(x = par2, y = mean)) +
-    geom_errorbar(data = plot_tib2, aes(ymin=low, ymax=up),
-                  size=.3, width=0.1) +
-    ggtitle("Permutation Analysis")
+  coefs_mod <- coefkey %>% 
+    filter(V2 %in% resu$names.fixed) %>% 
+    mutate(get_p = paste0("coefs_mod$V1[", 1:n(), "]"))
   
-  saveRDS(plot_tib, file = glue("data/models_res/{species}/perm/coefs_{species}.rds", sep= ""))  
-  #saveRDS(pt, file = glue("data/models_res/{species}/perm/permplot_{species}.rds", sep= ""))  
+  plot_tib <- matrix(ncol = 6, nrow= 0)
+  colnames(plot_tib) <- c("mod","mean","low","up","par", "par2")
+    
+  for(i in 1:nrow(coefs_mod)){
+    plot_tib <- rbind(plot_tib, get(eval(parse(text =coefs_mod$get_p[i]))))
+  }
+  
+  saveRDS(plot_tib, file = glue("data/models_resnew/{species}/perm/coefs_{species}.rds", sep= ""))  
+  #saveRDS(pt, file = glue("data/models_resnew/{species}/perm/permplot_{species}.rds", sep= ""))  
   
 }
 
-for(i in 7:nrow(sps_list)){
-  
+for(i in 1:nrow(sps_list)){
   species <- sps_list[i,]
-  #run_sensi(species = species, offsets = 2)
-  run_perm(species = species, perm = 250, offsets = 2)
-  
+  #run_sensi(species = species)
+  run_perm(species = species, perm = 1000) 
 }
 
+# BHVI permute 554
+# blbw permute 54
+# btnw 615
 
+
+#a <- purrr::map2(premsensi2,premsensi1,rbind)
 

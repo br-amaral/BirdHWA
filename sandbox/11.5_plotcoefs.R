@@ -1,7 +1,6 @@
 library(tidyverse)
 
-#library(grid)
-#library(RColorBrewer)
+
 
 COEFMAT_PATH <- glue("data/coef_species.csv")
 INTERCEPT_PATH <- glue("data/intercepts.csv")

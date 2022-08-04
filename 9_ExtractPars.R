@@ -5,63 +5,69 @@ library(INLA)
 library(tidyselect)
 
 ### choose species here! species list is: 
-###  "ACFL"  "BHVI"  "BLBW"  "BTNW"  "HETH"  "MAWA"  "RBNU"  
-###  "BLJA"  "CERW"  "EAPH"  "REVI"  "SCTA"  "WBNU"  "WEWA"  "WOTH"
-#   spsr <- species <- 
-source("7_extract_fixed_pars.R")
-# source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
-#  source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 
-summary_results <- readRDS(glue('data/models_res/{spsr}/summary_results.rds'))
+source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
 
-summary_results2 <- summary_results %>%
-  mutate(waic_list = map(result, "waic")) %>%
-  #filter(!map_lgl(waic_list, is.null)) %>%
-  mutate(waicNull = !map_lgl(waic_list, is.null),
-         waic = NA)
+SPECIES_DATA_PATH <- "data/src/sps_list.csv"
+sps_list <- read_csv(SPECIES_DATA_PATH)
 
-for(i in 1:nrow(summary_results2)){
-  if(as.logical(summary_results2$waicNull[i]) == TRUE) {
-    summary_results2$waic[i] <- unlist(pluck(summary_results2$waic_list[i], 1))} else {
-      summary_results2$waic[i] <- NA
-    }
+for(i in 1:nrow(sps_list)){
+  spsr <- species <-  pull(sps_list[i,])
+  summary_results <- readRDS(glue('data/models_resnew/{spsr}/summary_results.rds'))
+  
+  summary_results2 <- summary_results %>%
+    mutate(waic_list = map(result, "waic")) %>%
+    #filter(!map_lgl(waic_list, is.null)) %>%
+    mutate(waicNull = !map_lgl(waic_list, is.null),
+           waic = NA)
+  
+  for(i in 1:nrow(summary_results2)){
+    if(as.logical(summary_results2$waicNull[i]) == TRUE) {
+      summary_results2$waic[i] <- unlist(pluck(summary_results2$waic_list[i], 1))} else {
+        summary_results2$waic[i] <- NA
+      }
+  }
+  
+  summary_results2 <- summary_results2 %>%
+    mutate(fixed = map(result, "fixed"),
+           intercept = map(fixed, f_intercept),
+           year_offset = map(fixed, f_year_offset),
+           infoff = map(fixed, f_infoff),
+           NewObserver = map(fixed, f_NewObserver),
+           temp_min_scale = map(fixed, f_temp_min_scale),
+           year_offset_infoff = map(fixed, f_year_offset_infoff),
+           year_offset_temp_min_scale = map(fixed, f_year_offset_temp_min_scale),
+           infoff_temp_min_scale = map(fixed, f_infoff_temp_min_scale),
+           year_offset_infoff_temp_min_scale = map(fixed, f_year_offset_infoff_temp_min_scale)) 
+  
+  pars_models_FUNC <- function(i) {
+    summary_results2 %>%
+      rowwise() %>%
+      mutate(intercept = as.numeric(intercept[[i]]),
+             year_offset = year_offset[[i]],
+             infoff = infoff[[i]],
+             NewObserver = NewObserver[[i]],
+             temp_min_scale = temp_min_scale[[i]],
+             year_offset_infoff = year_offset_infoff[[i]],
+             year_offset_temp_min_scale = year_offset_temp_min_scale[[i]],
+             infoff_temp_min_scale = infoff_temp_min_scale[[i]],
+             year_offset_infoff_temp_min_scale = year_offset_infoff_temp_min_scale[[i]],
+             esti_type = ifelse(i == 1, "mean", ifelse(i == 2, "low", "up"))) %>% 
+      select(-c(result_path, result, waic_list, waicNull, fixed))
+  }
+  
+  pars_models <- as_tibble(rbind(pars_models_FUNC(1),
+                                 pars_models_FUNC(2),
+                                 pars_models_FUNC(3)))
+  
+  (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
+  
+  write_rds(summary_results2, file = glue("data/models_resnew/{species}/summary_results2.rds"))
+  rm(summary_results2)
+  rm(summary_results)
+  rm(species)
+  rm(spsr)
 }
-
-summary_results2 <- summary_results2 %>%
-  mutate(fixed = map(result, "fixed"),
-         intercept = map(fixed, f_intercept),
-         year_offset = map(fixed, f_year_offset),
-         infoff = map(fixed, f_infoff),
-         NewObserver = map(fixed, f_NewObserver),
-         temp_min_scale = map(fixed, f_temp_min_scale),
-         year_offset_infoff = map(fixed, f_year_offset_infoff),
-         year_offset_temp_min_scale = map(fixed, f_year_offset_temp_min_scale),
-         infoff_temp_min_scale = map(fixed, f_infoff_temp_min_scale),
-         year_offset_infoff_temp_min_scale = map(fixed, f_year_offset_infoff_temp_min_scale)) 
-
-pars_models_FUNC <- function(i) {
-  summary_results2 %>%
-    rowwise() %>%
-    mutate(intercept = as.numeric(intercept[[i]]),
-           year_offset = year_offset[[i]],
-           infoff = infoff[[i]],
-           NewObserver = NewObserver[[i]],
-           temp_min_scale = temp_min_scale[[i]],
-           year_offset_infoff = year_offset_infoff[[i]],
-           year_offset_temp_min_scale = year_offset_temp_min_scale[[i]],
-           infoff_temp_min_scale = infoff_temp_min_scale[[i]],
-           year_offset_infoff_temp_min_scale = year_offset_infoff_temp_min_scale[[i]],
-           esti_type = ifelse(i == 1, "mean", ifelse(i == 2, "low", "up"))) %>% 
-    select(-c(result_path, result, waic_list, waicNull, fixed))
-}
-
-pars_models <- as_tibble(rbind(pars_models_FUNC(1),
-                               pars_models_FUNC(2),
-                               pars_models_FUNC(3)))
-
-(waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
-
-#write_rds(summary_results2, file = glue("data/models_res/{species}/summary_results2.rds"))
 
 year_ <- waic_best$year[1]
 mod_ <- waic_best$model[1]

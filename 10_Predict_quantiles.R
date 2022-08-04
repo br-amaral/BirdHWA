@@ -7,12 +7,18 @@
 # WARNING: can't run everything at once, because 'maxi' (upper limit of prediction plots) varies according
 #            to species in different temperatures. has to be added manually once you look at the results
 
+i <- 14
+
 library(tidyverse)
 library(gridExtra)
 library(glue)
 
-# species <- spsr <- 'BTNW'
-SUM_RES_PATH <- glue("data/models_res/{species}/summary_results2.rds")
+SPECIES_DATA_PATH <- "data/src/sps_list.csv"
+sps_list <- read_csv(SPECIES_DATA_PATH)
+
+species <- spsr <- sps_list[i,1]
+
+SUM_RES_PATH <- glue("data/models_res_new/{species}/summary_results2.rds")
 
 # Make predictions with the fixed values and temperature quantiles
 summary_results2 <- my_tibble <- read_rds(SUM_RES_PATH)
@@ -85,6 +91,9 @@ temps <- rbind(
 (t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2])
 (t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3])
 
+svg(glue("Figures/{species}_tempquant.svg"), 
+    width = 8, height = 5)
+
 ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
   geom_histogram(aes(y = stat(count)/length(temps$temp_min_scale)),
                  position = "identity", alpha = .7,
@@ -110,7 +119,9 @@ ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
   ylab("Frequency") +
   scale_y_continuous(limits = c(0,0.2))
 
-predict.inla2 <- function(species, modelN, temp, max) {
+dev.off() 
+
+predict.inla2 <- function(species, modelN, temp, max, temp_n) {
   my_tibble2 <- my_tibble %>% 
     filter(species == species,
            model == modelN) %>% 
@@ -124,7 +135,8 @@ predict.inla2 <- function(species, modelN, temp, max) {
            year_offset_infoff,
            year_offset_temp_min_scale,
            infoff_temp_min_scale,
-           year_offset_infoff_temp_min_scale) 
+           year_offset_infoff_temp_min_scale,
+           NewObserver) 
   
   pred_tab2 <- create_pred_off(2)
   pred_tab3 <- create_pred_off(3)
@@ -144,11 +156,11 @@ predict.inla2 <- function(species, modelN, temp, max) {
   
   pred_tab_name <- glue("pred_tab{year_}")
   
-  plot.pred(off = year_, pars_tib = my_tibble2, pred_tabX = get(pred_tab_name), temp = temp, max = max)
+  plot.pred(off = year_, pars_tib = my_tibble2, pred_tabX = get(pred_tab_name), temp = temp, max = max, temp_n = temp_n)
   
 }
 
-plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
+plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   pars_tib <- pars_tib %>% 
     filter(offset == off)
   if(nrow(pars_tib) != 1) {stop("oooppsssss error row 19 extracting model pars")}
@@ -162,6 +174,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   ifelse(!is.na(pars_tib$year_offset_temp_min_scale[[1]][1]), b5 <- pars_tib$year_offset_temp_min_scale[[1]][1], b5 <- 0)
   ifelse(!is.na(pars_tib$infoff_temp_min_scale[[1]][1]), b6 <- pars_tib$infoff_temp_min_scale[[1]][1], b6 <- 0)
   ifelse(!is.na(pars_tib$year_offset_infoff_temp_min_scale[[1]][1]), b7 <- pars_tib$year_offset_infoff_temp_min_scale[[1]][1], b7 <- 0)
+  ifelse(!is.na(pars_tib$NewObserver[[1]][1]), b8 <- pars_tib$NewObserver[[1]][1], b8 <- 0)
   
   pred_tabX <- pred_tabX %>% 
     mutate(temp_t = temp)
@@ -190,6 +203,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   b5u <- pars_tib$year_offset_temp_min_scale[[1]][3]
   b6u <- pars_tib$infoff_temp_min_scale[[1]][3]
   b7u <- pars_tib$year_offset_infoff_temp_min_scale[[1]][3]
+  b8u <- pars_tib$NewObserver[[1]][3]
   
   no_infes <- no_infes %>% 
     mutate(predictionU = exp(
@@ -205,6 +219,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
         (b6u * infoff_t * temp_t) + (b7u * year_off_t * infoff_t * temp_t)),
       HWA = 'no_infest'
     )
+  
   # low -----------------
   b0l <- pars_tib$intercept[[1]][2]
   b1l <- pars_tib$year_off_t[[1]][2]
@@ -214,6 +229,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   b5l <- pars_tib$year_offset_temp_min_scale[[1]][2]
   b6l <- pars_tib$infoff_temp_min_scale[[1]][2]
   b7l <- pars_tib$year_offset_infoff_temp_min_scale[[1]][2]
+  b8l <- pars_tib$NewObserver[[1]][2]
   
   no_infes <- no_infes %>% 
     mutate(predictionL = exp(
@@ -238,8 +254,24 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   plot_preds <- plot_preds %>% 
     filter(!(HWA == 'no_infest' & year_off_t < 0)) %>% 
     arrange(desc(HWA)) 
+  write_csv(plot_preds, file = glue("data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv"))
   
-  write_csv(plot_preds, file = glue("data/{spsr}_{temp}preds.csv"))
+  coefs <- as_tibble(cbind(rbind('b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8'),
+                           rbind('intercept','year_off_t', 'infoff','temp_min_scale',
+                                 'year_offset_infoff','year_offset_temp_min_scale','infoff_temp_min_scale',
+                                 'year_offset_infoff_temp_min_scale','NewObserver'),
+                           rbind(b0, b1, b2, b3, b4, b5, b6, b7, b8),
+                           rbind(b0l, b1l, b2l, b3l, b4l, b5l, b6l, b7l, b8l),
+                           rbind(b0u, b1u, b2u, b3u, b4u, b5u, b6u, b7u, b8u)))
+  colnames(coefs) <- c("betas","coef_name","mean","low","up")
+  coefs$mean <- as.numeric(coefs$mean)
+  coefs$low <- as.numeric(coefs$low)
+  coefs$up <- as.numeric(coefs$up)
+  
+  coefs <- rbind(coefs, 
+                 c("mod_year", pull(species), as.numeric(mod_), as.numeric(year_), NA))
+  
+  write_csv(coefs, file = glue("data/{spsr}_coefs.csv"))
   
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_line(size = 0.8) + 
@@ -273,14 +305,20 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max){
   
 }
 
+limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
+            4, 0.4, 21, 8.5, 16, 0.5, 35)
 
-# maxi <- 32
+maxi <- limits[i]
 
-a <- predict.inla2(spsr, mod_, t1, maxi)
-b <- predict.inla2(spsr, mod_, t2, maxi)
-c <- predict.inla2(spsr, mod_, t3, maxi)
-
+a <- predict.inla2(spsr, mod_, t1, maxi, temp_n = "t1")
+b <- predict.inla2(spsr, mod_, t2, maxi, temp_n = "t2")
+c <- predict.inla2(spsr, mod_, t3, maxi, temp_n = "t3")
 grid.arrange(a, b, c, ncol = 3)
+
+svg(glue("Figures/{species}_preds.svg"), 
+    width = 13, height = 3)
+grid.arrange(a, b, c, ncol = 3)
+dev.off()
 print(species)
 
 unique(BIRDtab$min_tempMe)/100
@@ -288,4 +326,5 @@ unique(BIRDtab$sd_tempMi)/100
 
 quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
 
+rm(list = ls())
 

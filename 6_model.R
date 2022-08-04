@@ -37,12 +37,10 @@ run_model <- function(offset, BIRDx, formula){
     mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA)))
-  print(nrow(BIRDx))
-  print(sum(BIRDx$SpeciesTotal))
 
   model <- inla(formula, 
-                #family="poisson",
-                family = "zeroinflatedpoisson0",
+                family="poisson",
+                #family = "zeroinflatedpoisson0",
                 #family = "zeroinflatedpoisson1",
                 data=BIRDx, 
                 control.predictor=list(compute=TRUE), 
@@ -61,8 +59,8 @@ run_combinations <- function(species){
       name <- glue("{species}_model{i}_{off}yrs")
       assign(name,resu)
       print(name)
-      name2 <- glue("data/models_res/{species}/{name}.rds", sep= "")
-      dir.create(glue("data/models_res/{species}"))
+      name2 <- glue("data/models_resnew/{species}/{name}.rds", sep= "")
+      dir.create(glue("data/models_resnew/{species}"))
       saveRDS(object = get(name), file = name2)
       rm(resu)
       rm(BIRDtab)
@@ -71,8 +69,4 @@ run_combinations <- function(species){
 }
 
 lapply(sps_list$SpeciesCode, run_combinations)
-
-
-
-
 
