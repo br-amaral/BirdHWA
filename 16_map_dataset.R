@@ -17,6 +17,9 @@ set.seed(10)
 
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 sps_list <- read_csv(SPECIES_DATA_PATH)
+FIPSROU_DATA_PATH <- "data/RouteFips.csv"
+
+roufip <- read_csv(FIPSROU_DATA_PATH, col_types = list(col_double(), col_character()))
 
 finaldat <- function(species){
   SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
@@ -49,5 +52,7 @@ BIRD2 <- BIRD %>%
   dplyr::select(RouteId, YearInfested) %>% 
   distinct()
 
+fipinf <- left_join(BIRD2, route_hex, by = "RouteId") %>% 
+  dplyr::select(RouteId, YearInfested)
 
-
+fipinf <- left_join(fipinf, roufip, by = "RouteId")
