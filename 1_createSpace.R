@@ -34,8 +34,10 @@ route_hex <- read_csv(ROUTE_DATA_PATH, col_types = cols_only(
                           paste0(RouteId)
                           ))
 
-route_hex <- left_join(route_hex, hexord, by = "FID") %>% 
+route_hex <- left_join(route_hex, hexord, by = "FID")
+
+route_hex2 <- route_hex %>% 
   select(`RouteId`,
          `hexID`)
 
-saveRDS(route_hex, "data/route_hex.rds")
+saveRDS(route_hex2, "data/route_hex.rds")
