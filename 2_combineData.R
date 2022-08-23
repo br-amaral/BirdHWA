@@ -1,22 +1,25 @@
 # 2_combineData
 
-# Input: StateData: folder with matrices from BBS with bird data for individual states
-#        infestations.rds: routes with information of when they were infested
-#        weather.csv: matrix with information regarding the observer
-#        route_coor.csv: matrix with xy coordinates of the routes
-#        route_hex.rds: output of 1_createSpace. matrix with routes and hexagon number
-#        https://(...)speclist.cfm: website with species names and codes
+# Input: 
+#   StateData: folder with matrices from BBS with bird data for individual states
+#   infestations.rds: routes with information of when they were infested
+#   weather.csv: matrix with information regarding the observer
+#   route_coor.csv: matrix with xy coordinates of the routes
+#   route_hex.rds: output of 1_createSpace. matrix with routes and hexagon number
+#   https://(...)speclist.cfm: website with species names and codes
 #        
 # Output: 
-#         BirdHWA.rds:
-#         infestations_2.rds
+#   BirdHWA.rds: information about species couns in a route in an year
+#   infestations_2.rds: information about which routes were infested at each year
 
+# Load packages ---------------------
 library(tidyverse)
 library(fs)
 library(rvest)
 library(sp)
-## have raster library installed
+# MUST have raster library installed
 
+# files to be sourced paths ---------------------
 STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
 INFESTATIONS_PATH2 <- "data/fips_infes2.csv"
@@ -25,7 +28,7 @@ LATLONG_PATH <- "data/src/route_coor.csv"
 HEXAGON_PATH <- "data/route_hex.rds"
 SPECIES_TABLE_URL <- "https://www.pwrc.usgs.gov/BBl/manual/speclist.cfm"
 
-## Import: Species codes and names --------------------
+# Import: Species codes and names --------------------
 speciesList <- read_html(SPECIES_TABLE_URL) %>%
   html_nodes("table") %>%
   html_table(fill = T) %>%
@@ -35,7 +38,7 @@ speciesList <- read_html(SPECIES_TABLE_URL) %>%
          SpeciesName = `Common Name`,
          SpeciesSciName = `Scientific Name`)
   
-## Import: Observer info  --------------------
+# Import: Observer info  --------------------
 weather <- read_csv(WEATHER_PATH, col_types = cols_only(
   StateNum = col_number(),
   Route = col_number(),
@@ -46,7 +49,7 @@ weather <- read_csv(WEATHER_PATH, col_types = cols_only(
   rename(ObserverId = ObsN,
          ObsType = RPID)
 
-## Import: Infestation info  --------------------
+# Import: Infestation info  --------------------
 # table with years when adelgid arrived in different counties
 
 addYearInfested <- . %>%
@@ -66,7 +69,7 @@ infestations <- read_rds(INFESTATIONS_PATH) %>%
 
 years_with_data <- sort(unique(infestations$Year))
 
-## Import: bird data for states --------------------
+# Import: bird data for states --------------------
 stateData <- STATE_DATA_PATH %>%
   dir_ls() %>%
   map(read_csv, col_types = cols_only(
@@ -83,7 +86,7 @@ stateData <- STATE_DATA_PATH %>%
   relocate(RouteId) %>% 
   filter(Year %in% years_with_data)
 
-## Import: lat long coordinates for routes --------------------
+# Import: lat long coordinates for routes --------------------
 latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
   StateNum = col_number(),
   Route = col_number(),
@@ -92,11 +95,11 @@ latlong <- read_csv(LATLONG_PATH, col_types = cols_only(
   mutate(RouteId = paste(sprintf("%02d",StateNum),sprintf("%03d",Route), sep=""))%>%
   relocate(RouteId)
 
-## select only routes in hemlock range
+# Select only routes in hemlock range
 stateData <- stateData %>% 
   filter(RouteId %in% infestations$RouteId)
 
-## Combine data sets: infestation, species, observer and lat long  --------------------
+# Combine data sets: infestation, species, observer and lat long  --------------------
 # single tibble with all the information
 BirdHWA <- stateData %>%
   left_join(infestations, by = c("StateNum", "Route", "Year", "RouteId")) %>%
@@ -106,11 +109,11 @@ BirdHWA <- stateData %>%
 
 if(nrow(BirdHWA) != nrow(stateData)){stop("Something wrong with the joins!")}
 
-## make no infestation have YearInfested equals to zero
+# Make no infestation have YearInfested equals to zero
 BirdHWA <- BirdHWA %>% 
   mutate(YearInfested = ifelse(YearInfested == Inf, 0, YearInfested))
 
-## Combine data sets: add temperature data -------------------
+# Combine data sets: add temperature data -------------------
 # temperature data is in °C * 10
 climate <- raster::getData('worldclim', var = 'bio', res = 2.5)
 # saveRDS(climate, file = "data/climate.rds")
@@ -153,7 +156,7 @@ BirdHWA <- BirdHWA %>%
 #  mutate(sd_tempMi = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 16]), sd),
 #         sd_tempMe = sapply(unique(BirdHWA[which(BirdHWA$Infested == T), 17]), sd))
 
-## Save!  -------------------
+# Export tibbles  -------------------
 write_rds(BirdHWA, file = 'data/BirdHWA.rds') 
 write_rds(infestations, file = 'data/infestations_2.rds') 
 
