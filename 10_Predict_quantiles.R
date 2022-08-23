@@ -4,122 +4,20 @@
 #         plot of predictions of temperature quadrants
 #         table with species predictions (preds_{species}.rds)
 #         table with species coefficients (coefs_{species}.rds)
-# WARNING: can't run everything at once, because 'maxi' (upper limit of prediction plots) varies according
-#            to species in different temperatures. has to be added manually once you look at the results
-
-i <- 14
 
 library(tidyverse)
 library(gridExtra)
 library(glue)
 
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
-sps_list <- read_csv(SPECIES_DATA_PATH)
 
-species <- spsr <- sps_list[i,1]
+(sps_list <- read_csv(SPECIES_DATA_PATH))
+limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
+            4, 0.4, 21, 8.5, 16, 35)
 
-SUM_RES_PATH <- glue("data/models_res_new/{species}/summary_results2.rds")
+# functions ---------------------------------------------
 
-# Make predictions with the fixed values and temperature quantiles
-summary_results2 <- my_tibble <- read_rds(SUM_RES_PATH)
-
-(waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
-
-year_ <- waic_best$year[1]
-mod_ <- waic_best$model[1]
-
-pred_tab <- as_tibble(seq(-10,20,1)) %>% 
-  rename(year = value)
-
-create_pred_off <- function(offset_v){
-  pred_tabX <- pred_tab %>% 
-    mutate(infoff_t =  ifelse(year <= offset_v, 0, 1),
-           year_off_t = year - offset_v)
-  return(pred_tabX)
-}
-
-offset <- year_ 
-
-SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
-BIRDtab <- readRDS(SPECIES_MOD_DAT)
-
-BIRDx <- BIRDtab %>%  
-  # remove 20 ears before and after infestation
-  mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
-  filter(year_offset > -20 & year_offset < 20) %>% 
-  # Only routes infested for at least 10 years
-  group_by(RouteId) %>% 
-  mutate(max = max(year_offset)) %>%  
-  filter(max > 9) %>% 
-  ungroup() %>% 
-  # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
-  mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
-         # infoff: 'infested' route according to the delay in the effect (offset)
-         infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA))) 
-
-ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
-  geom_point() +
-  geom_smooth(aes(fill = Infested)) +
-  ggtitle("-20 e +20 filtro") +
-  theme_bw()
-
-ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
-  #  geom_point() +
-  geom_smooth() +
-  ggtitle(species) + xlim(-20,20) 
-
-x <- as.numeric(as.matrix(BIRDx[which(BIRDx$year_offset<10),1]))
-
-BIRDx2 <- BIRDx[which(as.numeric(BIRDx$RouteId) %in%  x) ,]
-
-BIRDx2INF <- BIRDx2[which(BIRDx2$Infested == T),]
-BIRDx2NO <- BIRDx2[which(BIRDx$Infested == F),]
-
-mean(BIRDx2INF$temp_min_scale)
-mean(BIRDx2NO$temp_min_scale)
-
-#par(mfrow = c(2,1))
-#hist(BIRDx2INF$temp_min_scale)
-#hist(BIRDx2NO$temp_min_scale)
-
-temps <- rbind(
-  BIRDx2INF %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested),
-  BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested)
-)
-
-(t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1])
-(t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2])
-(t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3])
-
-svg(glue("Figures/{species}_tempquant.svg"), 
-    width = 8, height = 5)
-
-ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
-  geom_histogram(aes(y = stat(count)/length(temps$temp_min_scale)),
-                 position = "identity", alpha = .7,
-                 bins = 15) + 
-  scale_fill_manual(values=c("grey10", "grey90")) +
-  geom_vline(xintercept = t1, size=0.5, color = "black") +
-  geom_vline(xintercept = t2, size=0.5, color = "black") +
-  geom_vline(xintercept = t3, size=0.5, color = "black") +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text = element_text(size= 12),
-        axis.title = element_text(size = 12),
-        legend.position = "none",
-        #axis.title.y = element_text(margin = margin(t = 0, r = 5, b = 0, l = 0)),
-        #axis.title.x = element_text(margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.title.y=element_blank(),
-        axis.title.x=element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black")) + 
-  xlab("Mean minimum temperature") +
-  ylab("Frequency") +
-  scale_y_continuous(limits = c(0,0.2))
-
-dev.off() 
+'%!in%' <- function(x,y)!('%in%'(x,y))
 
 predict.inla2 <- function(species, modelN, temp, max, temp_n) {
   my_tibble2 <- my_tibble %>% 
@@ -163,18 +61,27 @@ predict.inla2 <- function(species, modelN, temp, max, temp_n) {
 plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   pars_tib <- pars_tib %>% 
     filter(offset == off)
-  if(nrow(pars_tib) != 1) {stop("oooppsssss error row 19 extracting model pars")}
+  if(nrow(pars_tib) != 1) {stop("oooppsssss error row 59 extracting model pars")}
   
-  # mean -----------
-  ifelse(!is.na(pars_tib$intercept[[1]][1]), b0 <- pars_tib$intercept[[1]][1], b0 <- 0)
-  ifelse(!is.na(pars_tib$year_off_t[[1]][1]), b1 <- pars_tib$year_off_t[[1]][1], b1 <- 0)
-  ifelse(!is.na(pars_tib$infoff[[1]][1]), b2 <- pars_tib$infoff[[1]][1], b2 <- 0)
-  ifelse(!is.na(pars_tib$temp_min_scale[[1]][1]), b3 <- pars_tib$temp_min_scale[[1]][1], b3 <- 0)
-  ifelse(!is.na(pars_tib$year_offset_infoff[[1]][1]), b4 <- pars_tib$year_offset_infoff[[1]][1], b4 <- 0)
-  ifelse(!is.na(pars_tib$year_offset_temp_min_scale[[1]][1]), b5 <- pars_tib$year_offset_temp_min_scale[[1]][1], b5 <- 0)
-  ifelse(!is.na(pars_tib$infoff_temp_min_scale[[1]][1]), b6 <- pars_tib$infoff_temp_min_scale[[1]][1], b6 <- 0)
-  ifelse(!is.na(pars_tib$year_offset_infoff_temp_min_scale[[1]][1]), b7 <- pars_tib$year_offset_infoff_temp_min_scale[[1]][1], b7 <- 0)
-  ifelse(!is.na(pars_tib$NewObserver[[1]][1]), b8 <- pars_tib$NewObserver[[1]][1], b8 <- 0)
+  # mean 
+  ifelse(!is.na(pars_tib$intercept[[1]][1]), 
+         b0 <- pars_tib$intercept[[1]][1], b0 <- 0)
+  ifelse(!is.na(pars_tib$year_off_t[[1]][1]),
+         b1 <- pars_tib$year_off_t[[1]][1], b1 <- 0)
+  ifelse(!is.na(pars_tib$infoff[[1]][1]), 
+         b2 <- pars_tib$infoff[[1]][1], b2 <- 0)
+  ifelse(!is.na(pars_tib$temp_min_scale[[1]][1]), 
+         b3 <- pars_tib$temp_min_scale[[1]][1], b3 <- 0)
+  ifelse(!is.na(pars_tib$year_offset_infoff[[1]][1]), 
+         b4 <- pars_tib$year_offset_infoff[[1]][1], b4 <- 0)
+  ifelse(!is.na(pars_tib$year_offset_temp_min_scale[[1]][1]), 
+         b5 <- pars_tib$year_offset_temp_min_scale[[1]][1], b5 <- 0)
+  ifelse(!is.na(pars_tib$infoff_temp_min_scale[[1]][1]), 
+         b6 <- pars_tib$infoff_temp_min_scale[[1]][1], b6 <- 0)
+  ifelse(!is.na(pars_tib$year_offset_infoff_temp_min_scale[[1]][1]), 
+         b7 <- pars_tib$year_offset_infoff_temp_min_scale[[1]][1], b7 <- 0)
+  ifelse(!is.na(pars_tib$NewObserver[[1]][1]), 
+         b8 <- pars_tib$NewObserver[[1]][1], b8 <- 0)
   
   pred_tabX <- pred_tabX %>% 
     mutate(temp_t = temp)
@@ -205,22 +112,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   b7u <- pars_tib$year_offset_infoff_temp_min_scale[[1]][3]
   b8u <- pars_tib$NewObserver[[1]][3]
   
-  no_infes <- no_infes %>% 
-    mutate(predictionU = exp(
-      b0u + (b1u * year_off_t) + (b3u * temp_t) +
-        (b5u * year_off_t * temp_t)),
-      HWA = 'infest'
-    )
-  
-  infes <- infes %>% 
-    mutate(predictionU = exp(
-      b0u + (b1u * year_off_t) + (b2u * infoff_t) + (b3u * temp_t) +
-        (b4u * year_off_t * infoff_t) + (b5u * year_off_t * temp_t) +
-        (b6u * infoff_t * temp_t) + (b7u * year_off_t * infoff_t * temp_t)),
-      HWA = 'no_infest'
-    )
-  
-  # low -----------------
+  # low 
   b0l <- pars_tib$intercept[[1]][2]
   b1l <- pars_tib$year_off_t[[1]][2]
   b2l <- pars_tib$infoff[[1]][2]
@@ -231,21 +123,6 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   b7l <- pars_tib$year_offset_infoff_temp_min_scale[[1]][2]
   b8l <- pars_tib$NewObserver[[1]][2]
   
-  no_infes <- no_infes %>% 
-    mutate(predictionL = exp(
-      b0l + (b1l * year_off_t) + (b3l * temp_t) +
-        (b5l * year_off_t * temp_t)),
-      HWA = 'infest'
-    )
-  
-  infes <- infes %>% 
-    mutate(predictionL = exp(
-      b0l + (b1l * year_off_t) + (b2l * infoff_t) + (b3l * temp_t) +
-        (b4l * year_off_t * infoff_t) + (b5l * year_off_t * temp_t) +
-        (b6l * infoff_t * temp_t) + (b7l * year_off_t * infoff_t * temp_t)),
-      HWA = 'no_infest'
-    )
-  # ---------
   plot_preds <- rbind(no_infes, infes)
   
   off_gap <- infes %>% 
@@ -273,6 +150,11 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   
   write_csv(coefs, file = glue("data/{spsr}_coefs.csv"))
   
+  if(as.numeric(mod_) %!in% c(3,6,8,10,11)) {
+    plot_preds <- plot_preds %>% 
+      filter(!(HWA == "no_infest" & year <= year_))
+  }
+  
   ggplot(aes(x = year, y = prediction, col = HWA), data = plot_preds) +
     geom_line(size = 0.8) + 
     #geom_line(aes(x = year, y = prediction), data = off_gap,
@@ -291,13 +173,14 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
           legend.position = "none",
           #axis.title = element_text(size = 16)
           axis.title.x = element_blank(),
-          axis.title.y = element_blank()) + 
+          axis.title.y = element_blank(),
+          axis.text = element_text(size = 12)) + 
     #xlab("Years since HWA infestation") +
     #ylab("Bird Abundance") +
     scale_x_continuous(breaks = c(-10,-5,0,5,10,15,20)) +
     ylim(0, max) +
     scale_colour_manual("legend",
-                        values = c("no_infest" = "gray82", "infest" = "gray28"),
+                        values = c("no_infest" = "darkorange", "infest" = "darkorchid"),
                         labels = c("Not infested", "Infested"))
   # confidence interval
   #geom_line(aes(x = year, y = predictionL, col = HWA), data = plot_preds) +
@@ -305,26 +188,131 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   
 }
 
-limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
-            4, 0.4, 21, 8.5, 16, 0.5, 35)
+# loop in species ----------------------------------------
 
-maxi <- limits[i]
+for (i in 1:nrow(sps_list)) {
+  (species <- spsr <- sps_list[i,1])
+  
+  SUM_RES_PATH <- glue("data/models_resnew/{species}/summary_results2.rds")
+  SPECIES_MOD_DAT <- glue("data/species/{species}.rds")
+  
+  # Make predictions with the fixed values and temperature quantiles
+  summary_results2 <- my_tibble <- read_rds(SUM_RES_PATH)
+  
+  (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
+  
+  year_ <- waic_best$year[1]
+  mod_ <- waic_best$model[1]
+  
+  pred_tab <- as_tibble(seq(-10,20,1)) %>% 
+    rename(year = value)
+  
+  create_pred_off <- function(offset_v){
+    pred_tabX <- pred_tab %>% 
+      mutate(infoff_t =  ifelse(year <= offset_v, 0, 1),
+             year_off_t = year - offset_v)
+    return(pred_tabX)
+  }
+  
+  offset <- year_ 
+  
+  BIRDtab <- readRDS(SPECIES_MOD_DAT)
+  
+  BIRDx <- BIRDtab %>%  
+    # remove 20 ears before and after infestation
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested, 0)) %>% 
+    filter(year_offset > -20 & year_offset < 20) %>% 
+    # Only routes infested for at least 10 years
+    group_by(RouteId) %>% 
+    mutate(max = max(year_offset)) %>%  
+    filter(max > 9) %>% 
+    ungroup() %>% 
+    # year_offset is standardizing yrhwa to the offset (years after infestation to the impact) ADDING THE LAG
+    mutate(year_offset = ifelse(YearInfested != 0, Year - YearInfested + offset, 0),
+           # infoff: 'infested' route according to the delay in the effect (offset)
+           infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA))) 
+  
+  ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
+    geom_point() +
+    geom_smooth(aes(fill = Infested)) +
+    ggtitle("-20 e +20 filtro") +
+    theme_bw()
+  
+  ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
+    #  geom_point() +
+    geom_smooth() +
+    ggtitle(species) + xlim(-20,20) 
+  
+  x <- as.numeric(as.matrix(BIRDx[which(BIRDx$year_offset<10),1]))
+  
+  BIRDx2 <- BIRDx[which(as.numeric(BIRDx$RouteId) %in% x), ]
+  
+  BIRDx2INF <- BIRDx2[which(BIRDx2$Infested == T),]
+  BIRDx2NO <- BIRDx2[which(BIRDx$Infested == F),]
+  
+  mean(BIRDx2INF$temp_min_scale, na.rm = T)
+  mean(BIRDx2NO$temp_min_scale, na.rm = T)
+  
+  #par(mfrow = c(2,1))
+  #hist(BIRDx2INF$temp_min_scale)
+  #hist(BIRDx2NO$temp_min_scale)
+  
+  temps <- rbind(
+    BIRDx2INF %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested),
+    BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested)
+  )
+  
+  (t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1])
+  (t2 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[2])
+  (t3 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[3])
+  
+  svg(glue("Figures/FigS2/{species}_tempquant.svg"), 
+      width = 6.5, height = 5)
+  
+  ggplot(temps, aes(x = temp_min_scale, fill = Infested)) +
+    geom_histogram(aes(y = stat(count)/length(temps$temp_min_scale)),
+                   position = "identity", alpha = .7,
+                   bins = 15) + 
+    scale_fill_manual(values=c("grey10", "grey90")) +
+    geom_vline(xintercept = t1, size=0.5, color = "black") +
+    geom_vline(xintercept = t2, size=0.5, color = "black") +
+    geom_vline(xintercept = t3, size=0.5, color = "black") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text = element_text(size= 28),
+          axis.title = element_text(size = 12),
+          legend.position = "none",
+          #axis.title.y = element_text(margin = margin(t = 0, r = 5, b = 0, l = 0)),
+          #axis.title.x = element_text(margin = margin(t = 5, r = 0, b = 0, l = 0)),
+          axis.title.y=element_blank(),
+          axis.title.x=element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_line(colour = "black")) + 
+    xlab("Mean minimum temperature") +
+    ylab("Frequency") +
+    scale_y_continuous(limits = c(0,0.2))
+  
+  dev.off() 
+  
+  maxi <- limits[i]
+  
+  a <- predict.inla2(spsr, mod_, t1, maxi, temp_n = "t1")
+  b <- predict.inla2(spsr, mod_, t2, maxi, temp_n = "t2")
+  c <- predict.inla2(spsr, mod_, t3, maxi, temp_n = "t3")
+  grid.arrange(a, b, c, ncol = 3)
+  
+  svg(glue("Figures/FigS1/{species}_preds.svg"), 
+      width = 13, height = 3)
+  grid.arrange(a, b, c, ncol = 3)
+  dev.off()
+  print(species)
+  
+  unique(BIRDtab$min_tempMe)/100
+  unique(BIRDtab$sd_tempMi)/100
+  
+  quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
 
-a <- predict.inla2(spsr, mod_, t1, maxi, temp_n = "t1")
-b <- predict.inla2(spsr, mod_, t2, maxi, temp_n = "t2")
-c <- predict.inla2(spsr, mod_, t3, maxi, temp_n = "t3")
-grid.arrange(a, b, c, ncol = 3)
-
-svg(glue("Figures/{species}_preds.svg"), 
-    width = 13, height = 3)
-grid.arrange(a, b, c, ncol = 3)
-dev.off()
-print(species)
-
-unique(BIRDtab$min_tempMe)/100
-unique(BIRDtab$sd_tempMi)/100
-
-quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
-
-rm(list = ls())
+}
 
