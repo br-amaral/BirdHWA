@@ -1,5 +1,5 @@
 # Plot percent of population change after 20 years of infestation
-# Input: preds_{species} for each species
+# Input: "data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv" for each species
 # Output: plot of population rate of change for each temperature quantile
 
 library(tidyverse)
@@ -33,9 +33,12 @@ for(i in 1:nrow(spslist)){
 sps_preds2 <- sps_preds %>% 
   filter(year == 20)
 sps_preds2$prop <- NA
+#sps_preds2$propper <- NA
 
 for(i in seq(from=1, to=nrow(sps_preds2), by=2)) {
   sps_preds2$prop[i] <- sps_preds2$prop[i+1] <- log(sps_preds2$prediction[i]/sps_preds2$prediction[i+1])
+  #sps_preds2$propper[i] <- sps_preds2$propper[i+1] <- (sps_preds2$prediction[i] - sps_preds2$prediction[i+1])/sps_preds2$prediction[i+1]
+  
 }
 
 sps_preds3 <- sps_preds2 %>% 
