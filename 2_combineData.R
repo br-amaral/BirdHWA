@@ -1,4 +1,5 @@
-# 2_combineData
+# 2_combineData ----------------------------------      
+# combine the BBS database with the HWA database
 
 # Input: 
 #   StateData: folder with matrices from BBS with bird data for individual states

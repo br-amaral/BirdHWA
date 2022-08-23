@@ -1,4 +1,5 @@
-# 1_createSpace
+# 1_createSpace ----------------------------------      
+# use GIS files to overlap spatial info and get matches between routes, FIPS, counties and hemlocks
 
 # Input;
 #   data/src/HexMap/hexagons: hexagon shape file, spatial position and FID of each cell

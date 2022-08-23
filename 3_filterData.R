@@ -1,11 +1,14 @@
-# 3_filterData
+# 3_filterData ----------------------------------      
+# keep only data in the distribution of hemlock trees, and add info about observer
 
-# Input: BirdHWA.rds: tibble created by 2_combineData; has information about the birds detected and occasions
-#                 with no detections and temperature in the route.
-#        infestations_2.rds: tibble created by 2_combineData; has informations about the routes, and infestation
-# Output: BirdHWA_2.rds: data frame with all species and occasions, with info of whether and when routes were infested
-#         
+# Input: 
+#   BirdHWA.rds: tibble created by 2_combineData; has information about the birds detected and occasions
+#      with no detections and temperature in the route.
+#   infestations_2.rds: tibble created by 2_combineData; has informations about the routes, and infestation
+# Output: 
+#   BirdHWA_2.rds: data frame with all species and occasions, with info of whether and when routes were infested
 
+# Load packages ----------------------------------      
 library(tidyverse)
 library(hablar)
 library(glue)
@@ -14,12 +17,12 @@ library(glue)
 BirdHWA <- readRDS('data/BirdHWA.rds') 
 infestations <- readRDS('data/infestations_2.rds')
 
-## Filter: locations  --------------------
+# Filter: locations  --------------------
 # routes only in counties with hemlock trees
 BirdHWA_f <- BirdHWA %>% 
   filter(RouteId %in% infestations$RouteId)
 
-## Filter: only one type of observation --------------------
+# Filter: only one type of observation --------------------
 # keep only one row for each routeXday
 # RPID order of keepers: 101 102 103 203
 
@@ -29,7 +32,7 @@ BirdHWA_f2 <- BirdHWA_f %>%
   slice(1) %>%   # takes the first occurrence if there is a tie
   ungroup()
 
-## Create new columns  --------------------
+# Create new columns  --------------------
 # yrhwa and first time observer
 BirdHWA_n3 <- BirdHWA_f2 %>% 
   mutate(yrhwa = Year - YearInfested,
@@ -63,5 +66,6 @@ BirdHWA_n5 <- BirdHWA_n4 %>%
          )
 
 BirdHWA_2 <- BirdHWA_n5
-  
+
+# Export file ----------------------------------      
 write_rds(BirdHWA_2, file = "data/BirdHWA_2.rds") 
