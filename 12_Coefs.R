@@ -1,5 +1,23 @@
+# 12_Coefs_figs.R
+# code to plot and creat table with info of coefficient estimates and best models
+#
+# INPUT
+#   data/models_resnew/{spsr}/{spsr}_coefs.csv: individual species coefficients
+#
+# OUTPUT
+#   data/coef_species.csv: species coefficient estimates table
+#   data/modyear.csv: matrix with sps, control, treatment, offset and best model
+#   data/coef_tab.csv: species coefficient estimates and CI, and best model and offset (table 4)
+#   Figures/Fig4/coef_beta2.svg (figure 4)
+#   Figures/Fig4/coef_beta3.svg (figure 4)
+#   Figures/Fig4/coef_beta6.svg (figure 4)
+#   Figures/Fig4/coef_beta7.svg (figure 4)
+#   Figures/Fig2/mod_year.svg: plot with best model and year (figure 2)
+
+# Load packages --------------------------------
 library(glue)
 library(tidyverse)
+library(gridExtra)
 
 SPSLIST_PATH <- glue("data/src/sps_list.csv")
 SPSPRED_PATH <- glue("data/models_resnew/")
@@ -113,7 +131,7 @@ order <- rev(c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
 sps_coefs2$species <- factor(sps_coefs2$species, levels = order)
 
 ## short-term effect plot --------
-svg(glue("Figures/coef_beta2.svg"), 
+svg(glue("Figures/Fig4/coef_beta2.svg"), 
     width = 3.5, height = 3)
 ggplot(data = sps_coefs2, 
        aes(y= species, x = infoff)) +
@@ -141,7 +159,7 @@ ggplot(data = sps_coefs2,
 dev.off()
 
 ## long-term effect plot --------
-svg(glue("Figures/coef_beta3.svg"), 
+svg(glue("Figures/Fig4/coef_beta3.svg"), 
     width = 3.5, height = 3)
 ggplot(data = sps_coefs2, 
        aes(y= species, x = year_offset_infoff)) +
@@ -170,7 +188,7 @@ ggplot(data = sps_coefs2,
 dev.off()
 
 ## short-term effect and temperature plot --------
-svg(glue("Figures/coef_beta6.svg"), 
+svg(glue("Figures/Fig4/coef_beta6.svg"), 
     width = 3.5, height = 3)
 ggplot(data = sps_coefs2, 
        aes(y= species, x = infoff_temp_min_scale)) +
@@ -199,7 +217,7 @@ ggplot(data = sps_coefs2,
 dev.off()
 
 ## long-term effect and temperature plot --------
-svg(glue("Figures/coef_beta7.svg"), 
+svg(glue("Figures/Fig4/coef_beta7.svg"), 
     width = 3.5, height = 3)
 ggplot(data = sps_coefs2, 
        aes(y= species, x = year_offset_infoff_temp_min_scale)) +
@@ -254,7 +272,7 @@ b <- ggplot(data = modyear, aes(x= year, y= species,
         axis.title.y=element_blank(),
         axis.title.x=element_blank()) 
 
-svg(glue("Figures/mod_year.svg"), 
+svg(glue("Figures/Fig2/mod_year.svg"), 
     width = 8, height = 3)
 grid.arrange(a,b, ncol = 2)
 dev.off()
