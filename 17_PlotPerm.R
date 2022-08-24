@@ -230,7 +230,7 @@ master_full2$sps_temp <- factor(master_full2$sps_temp,
 master_pro2$sps_temp <- factor(master_pro2$sps_temp, levels = facs)
 
 master_pro2 <- master_pro2 %>% 
-  group_by(species) %>% 
+  group_by(sps_temp) %>% 
   mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
          #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
          up = mean(prop) + ((1.96*sqrt(var(prop)))),

@@ -289,8 +289,23 @@ temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>%
 prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>% 
   arrange(orde)
 
+master_pro2 <- prop_tabX3 %>% 
+  group_by(species) %>% 
+  mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
+    #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
+    up = mean(prop) + ((1.96*sqrt(var(prop)))),
+    lo = mean(prop) - ((1.96*sqrt(var(prop))))) %>% 
+  ungroup()
+
+table95 <- master_pro2 %>% 
+  dplyr::select(species, sps_temp, up, lo) %>% 
+  distinct() 
+table95[which(table95$species == "CERW"), 3:4] <- matrix(c(-3.5,2,-3.5,2,-3.5,2), nrow = 3, byrow = T)
+
 (pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
     #geom_point(aes(shape = temp), colour = "grey", size = 2) +
+    geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
+                 size = 5, data = table95, alpha = 0.5) +
     geom_boxplot() +
     geom_vline(xintercept = 0,
                col = "gray43",
@@ -326,6 +341,8 @@ master_full_per <- master_full_per %>%
   mutate(temp2 = temp)
 
 ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
+  geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
+               size = 5, data = table95, alpha = 0.5) +
   geom_vline(xintercept = 0,
              col = "gray43",
              linetype = "dotted",
