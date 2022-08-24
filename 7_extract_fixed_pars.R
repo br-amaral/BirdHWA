@@ -1,3 +1,6 @@
+# 7_extract_fixed_pars.R
+# functions to extract parameter estimates for the summary objects of the model results
+
 f_intercept <- function(a){
   if("(Intercept)" %in% rownames(a)){
     a[which(rownames(a) == "(Intercept)"), c(1,3,5)]} else {
