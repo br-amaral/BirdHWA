@@ -229,13 +229,27 @@ master_full2$sps_temp <- factor(master_full2$sps_temp,
                                            "BLBW_t1", "BLBW_t2", "BLBW_t3", "BHVI_t1", "BHVI_t2", "BHVI_t3", "ACFL_t1", "ACFL_t2", "ACFL_t3"))
 master_pro2$sps_temp <- factor(master_pro2$sps_temp, levels = facs)
 
+master_pro2 <- master_pro2 %>% 
+  group_by(species) %>% 
+  mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
+         #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
+         up = mean(prop) + ((1.96*sqrt(var(prop)))),
+         lo = mean(prop) - ((1.96*sqrt(var(prop))))) %>% 
+  ungroup()
+  
+table95 <- master_pro2 %>% 
+  dplyr::select(species, sps_temp, up, lo) %>% 
+  distinct() 
+table95[which(table95$species == "CERW"), 3:4] <- matrix(c(-3.5,2,-3.5,2,-3.5,2), nrow = 3, byrow = T)
+
 # Export figure ----------------------
 svg(glue("Figures/FigS4/permutation.svg"), 
     width = 8.9, height = 6.3)
 
-ggplot(data = master_full2, # %>% filter(species == "CERW"),
-       aes(x= sps_temp, y = prop,
+ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 color = "white"), size = 2) +
+  geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
+               size = 5, data = table95, alpha = 0.5) +
   geom_hline(yintercept = 0,
              col = "gray43",
              size = 0.8, linetype = "dotted",) +
@@ -245,7 +259,7 @@ ggplot(data = master_full2, # %>% filter(species == "CERW"),
   geom_hline(yintercept = 0.3,
              col = "gray43",
              size = 0.8) +
-  geom_boxplot(width = 0.9999999, fill = "white",
+  geom_boxplot(width = 0.75, fill = "white",
                data = master_pro2, 
                aes(x= sps_temp, y = prop),
                color= "black",weight = 10, alpha = 0.7) + 
@@ -278,11 +292,12 @@ ggplot(data = master_full2, # %>% filter(species == "CERW"),
                                 "tt3" = "0.8"),
                      name = "Temperature\nQuantiles") +
   labs(title="Permutation analysis") +
-  scale_y_continuous(breaks = as.numeric(seq(-15,15, by = 5))) +
+  scale_y_continuous(breaks = as.numeric(seq(-3,2, by = 1)),
+                     limits = c(-3.5,2)) +
   scale_x_discrete(labels = c("\n", "WOTH", "\n", "\n", "REVI", "\n", "\n", "WBNU", "\n", "\n", "SCTA", "\n",
                               "\n", "EAPH", "\n", "\n", "CERW", "\n", "\n", "BLJA", "\n", "\n", "RBNU", "\n",
                               "\n", "MAWA", "\n", "\n", "HETH", "\n", "\n", "BTNW", "\n", "\n", "BLBW", "\n",
-                              "\n", "BHVI", "\n", "\n", "ACFL", "\n")) +
-  coord_flip()
+                              "\n", "BHVI", "\n", "\n", "ACFL", "\n")) + 
+  coord_flip() 
 
 dev.off()
