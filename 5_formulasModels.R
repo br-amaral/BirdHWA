@@ -1,3 +1,7 @@
+# 5_formulasModels.R
+#   script with all 11 models created to look at relationship of birds and
+#     temperature, infestation, etc
+
 # MODELS WITH TEMPERATURE:  --------------------
 # full model ----------
 formula1 <- SpeciesTotal ~ 1 + 
@@ -75,8 +79,7 @@ formula6 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
 # MODELS WITH NO TEMPERATURE:  --------------------
-# null model ----------
-# only intercept, year_offset, NewObservers
+## null model ----------
 formula10 <- SpeciesTotal ~ 1 + 
   year_offset + 
   NewObserver +
@@ -112,7 +115,7 @@ formula7 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
-
+# Model x
 formula11 <- SpeciesTotal ~ 1 + 
   year_offset + 
   NewObserver +
