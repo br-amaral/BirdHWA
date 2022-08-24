@@ -1,9 +1,13 @@
-# 4_singleSps
+# 4_singleSps ----------------------------------      
+# get data for only the species that I'm interested in analysing, and add no detections (zeros) for years
+#   where the species was not found but was previously found
 
 # Input: 
-#        
+#   data/src/sps_list.csv: klist of hemlock associates and control species used in the analysis
+#   data/BirdHWA_2.rds: bird dataset with info from BBS and HWA created by 3_combineData       
+
 # Output: 
-#         
+#   data/species/{species}.rds: BirdHWA for each species with zeros
 
 library(purrr)
 library(tidyverse)
@@ -49,7 +53,7 @@ single_sps <- function(species){
     relocate(colnames(BIRD2a))
   
   if(nrow(route_range_year) != nrow(add_nodetcs)) {
-    stop("error in line 51!")
+    stop("error in line 55!")
   }
   
   BIRD2 <- rbind(BIRD2a, BIRD2b) %>% 
