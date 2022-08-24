@@ -1,22 +1,30 @@
 # Predict quantiles
-# Input: summary_results file for each species
-# Output: plot of temperature distribution
-#         plot of predictions of temperature quadrants
-#         table with species predictions (preds_{species}.rds)
-#         table with species coefficients (coefs_{species}.rds)
+# Input: 
+#   summary_results file for each species
 
+#   data/src/sps_list.csv: list of evaluated species
+#   data/models_resnew/{species}/summary_results2.rds: tibble with species coefficient estimates for best model and offset
+#   data/species/{species}.rds: species dataset used to run the models
+
+# Output: 
+#   data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv"): matrix with species predictions for -10 to 20 years in different temperatures
+#   data/{spsr}_coefs.csv: table with species coefficient estimates
+#   Figures/FigS2/{species}_tempquant.svg: plot of the distribution of temperature within species range
+#   Figures/FigS1/{species}_preds.svg: plot of species predictions in different temperature quantiles
+
+# Load packages --------------------------
 library(tidyverse)
 library(gridExtra)
 library(glue)
 
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
-
 (sps_list <- read_csv(SPECIES_DATA_PATH))
+
+# upper limit of the prediction plot of each species
 limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
             4, 0.4, 21, 8.5, 16, 35)
 
 # functions ---------------------------------------------
-
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
 predict.inla2 <- function(species, modelN, temp, max, temp_n) {
@@ -189,7 +197,6 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
 }
 
 # loop in species ----------------------------------------
-
 for (i in 1:nrow(sps_list)) {
   (species <- spsr <- sps_list[i,1])
   
