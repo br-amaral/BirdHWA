@@ -14,6 +14,8 @@
 library(ggplot2)
 library(tidyverse)
 library(glue)
+library(magrittr)
+library(ggforestplot)
 
 # Load data -----------------------------
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
@@ -197,7 +199,7 @@ for(i in 1:nrow(master_full)){
 }
 
 master_pro2 <- master_pro %>% 
-  select(RouteId, prop, species, temp) %>% 
+  select(RouteId, prop, species, temp, ord) %>% 
   unite(sps_temp, species:temp, remove = FALSE)
 
 temp_order <- as_tibble(matrix(c("t1","t2","t3",1,2,3), nrow = 3)) %>% 
@@ -218,41 +220,37 @@ master_full2$sps_temp <- factor(master_full2$sps_temp,
                                           "BLBW_t1", "BLBW_t2", "BLBW_t3", "BHVI_t1", "BHVI_t2", "BHVI_t3", "ACFL_t1", "ACFL_t2", "ACFL_t3"))
 master_pro2$sps_temp <- factor(master_pro2$sps_temp, levels = facs)
 
+master_pro2$species_num <- as.numeric(master_pro2$ord)
+
 master_pro2 <- master_pro2 %>% 
   group_by(sps_temp) %>% 
   mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
     #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
     up = mean(prop) + ((1.96*sqrt(var(prop)))),
     lo = mean(prop) - ((1.96*sqrt(var(prop))))) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(species_num = as.numeric(ord),
+         stripe = factor(ifelse(ord %% 2 == 0, 1, 0)),
+         species_num2 = seq(1, nrow(.),1))
 
 table95 <- master_pro2 %>% 
-  dplyr::select(species, sps_temp, up, lo) %>% 
+  dplyr::select(species, sps_temp, up, lo, species_num, stripe) %>% 
   distinct() 
-table95[which(table95$species == "CERW"), 3:4] <- matrix(c(-3.5,2,-3.5,2,-3.5,2), nrow = 3, byrow = T)
 
 # export figure --------------------------------
 svg(glue("Figures/FigS3/sensi2.svg"), 
-    width = 8.9, height = 6.3)
+    width = 10, height = 6.3)
 
 ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 color = "white"), size = 2) +
-  
-  #geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
-  #             size = 5, data = table95, alpha = 0.5) +
-  geom_point() +
-  geom_hline(yintercept = 0,
-             col = "gray43",
-             size = 0.8) +
-  geom_hline(yintercept = -0.3,
-             col = "gray43",
-             linetype = "dotted",
-             size = 0.8) +
-  geom_hline(yintercept = 0.3,
-             col = "gray43",
-             linetype = "dotted",
-             size = 0.8) +
-  geom_boxplot(width = 1, fill = "white",
+  coord_flip() +
+  geom_segment(aes(y=lo, yend=up, x=sps_temp, xend=sps_temp),
+               size = 5, data = table95, alpha = 0.3, color = "yellow") +
+  #geom_point() +
+  geom_hline(yintercept = 0, col = "gray43", size = 0.8) +
+  geom_hline(yintercept = -0.3, col = "gray43", linetype = "dotted", size = 0.8) +
+  geom_hline(yintercept = 0.3, col = "gray43", linetype = "dotted", size = 0.8) +
+  geom_boxplot(width = 0.75, fill = "white",
                data = master_pro2, 
                aes(x= sps_temp, y = prop),
                color= "black", size=0.08,
@@ -288,13 +286,27 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 "tt2" = "0.5",
                                 "tt3" = "0.8"),
                      name = "Temperature\nQuantiles") +
-  #scale_y_continuous(breaks = c(-3,-2,-1,0,1,2,3), limits  = c(-3.4,3)) +
+  scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3.37,1.6)
+  ) +
   labs(title="Sensitivity analysis") +
   scale_x_discrete(labels = c("\n", "WOTH", "\n", "\n", "REVI", "\n", "\n", "WBNU", "\n", "\n", "SCTA", "\n",
                               "\n", "EAPH", "\n", "\n", "CERW", "\n", "\n", "BLJA", "\n", "\n", "RBNU", "\n",
                               "\n", "MAWA", "\n", "\n", "HETH", "\n", "\n", "BTNW", "\n", "\n", "BLBW", "\n",
-                              "\n", "BHVI", "\n", "\n", "ACFL", "\n")) +
-  coord_flip()
+                              "\n", "BHVI", "\n", "\n", "ACFL", "\n")) 
+#geom_stripes(data = master_full2, inherit.aes = FALSE, y = master_full2$species_num2,
+#             odd = "#33333333", even = "#00000000") 
 
 dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
 
