@@ -1,20 +1,15 @@
-# 1_createSpace ----------------------------------      
-# use GIS files to overlap spatial info and get matches between routes, FIPS, counties and hemlocks
+# 1_createSpace
 
-# Input;
-#   data/src/HexMap/hexagons: hexagon shape file, spatial position and FID of each cell
-#   data/src/route_hex.csv: matrix with each route and its FID
-# Output: 
-#   route_hex.csv: matrix with each route and the hexagon number where it is
+# Input: hexagons: hexagon shape file, spatial position and FID of each cell
+#                  matrix with each route and its FID
+# Output: route_hex.csv: matrix with each route and the hexagon number where it is
 
-# Load packages ---------------------
 library(sp)
 library(spdep)
 library(tidyverse)
 requireNamespace("raster")
 
-# Load data ---------------------
-#3 create hexagon map
+# create hexagon map
 HEX_DATA_PATH <- "data/src/HexMap/hexagons"
 ROUTE_DATA_PATH <- "data/src/route_hex.csv"
 
