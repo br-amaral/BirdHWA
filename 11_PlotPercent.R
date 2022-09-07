@@ -75,15 +75,17 @@ ggplot(data = sps_preds3, aes(y= species, x = prop)) +
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
         axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
+        #axis.title.y = element_blank(),
         legend.title.align = 0.5) +
   scale_x_continuous(breaks = seq(-3, 1, 1),
                      limits = c(-3, 1, 1)) +
-  scale_color_manual(values = c("t1" = "blue4",
+  scale_color_manual(values = c("t1" = "olivedrab4",
                                 "t2" = "violetred",
                                 "t3" = "darkorange3"),
                      labels = c("t1" = "0.2",
                                 "t2" = "0.5",
                                 "t3" = "0.8"),
-                     name = "Temperature\nQuantiles")
+                     name = "Temperature\nQuantiles") +
+  ylab("Log(Not infested route \n      Infested route)") 
+
 dev.off()
