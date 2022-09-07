@@ -194,9 +194,8 @@ for(i in 1:nrow(coefs)){
 plot_tib <- coefs
 
 saveRDS(plot_tib, file = glue("data/models_resnew/{species}/sims{species}.rds", sep= ""))  
-## just plotting!   -------------------------
-species <- "HETH"
 
+# Plotting!   -------------------------
 coefs <- plot_tib <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_resnew/HETH/simsHETH.rds")
 
 TEMPQUANT_PATH <- glue("data/tempquant.csv")
@@ -290,91 +289,69 @@ prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>%
   arrange(orde)
 
 master_pro2 <- prop_tabX3 %>% 
-  group_by(species) %>% 
+  rename(species = Species) %>% 
   mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
     #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
-    up = mean(prop) + ((1.96*sqrt(var(prop)))),
-    lo = mean(prop) - ((1.96*sqrt(var(prop))))) %>% 
-  ungroup()
+    up = mean(pop202) + ((1.96*sqrt(var(pop202)))),
+    lo = mean(pop202) - ((1.96*sqrt(var(pop202))))) 
 
 table95 <- master_pro2 %>% 
   dplyr::select(species, sps_temp, up, lo) %>% 
   distinct() 
-table95[which(table95$species == "CERW"), 3:4] <- matrix(c(-3.5,2,-3.5,2,-3.5,2), nrow = 3, byrow = T)
 
-(pl1 <- ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
-    #geom_point(aes(shape = temp), colour = "grey", size = 2) +
-    geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
-                 size = 5, data = table95, alpha = 0.5) +
-    geom_boxplot() +
-    geom_vline(xintercept = 0,
-               col = "gray43",
-               linetype = "dotted",
-               size = 1) +
-    geom_point(data = master_full_per, 
-               aes(y = sps_temp, x = pop202,
-                   shape = temp), colour = "black", size = 2) +
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          #legend.title = element_blank(),
-          legend.position = "right",
-          legend.justification = "right",
-          #legend.margin=margin(0,0,0,0),
-          #legend.box.margin=margin(-5,0,-5,-7),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          legend.title.align = 0.5) +
-    scale_x_continuous(breaks = seq(-3, 1, 0.5),
-                       limits = c(-3, 1, 0.5)) +
-    scale_color_manual(values = c("t1" = "blue4",
-                                  "t2" = "violetred",
-                                  "t3" = "darkorange3"),
-                       labels = c("t1" = "0.2",
-                                  "t2" = "0.5",
-                                  "t3" = "0.8"),
-                       name = "Temperature\nQuantiles")) +
-  ggtitle("Simulation")
+# export figure --------------------------------
+svg(glue("Figures/FigS5/simulation.svg"), 
+    width = 10, height = 4.5)
 
-master_full_per <- master_full_per %>% 
-  mutate(temp2 = temp)
-
-ggplot(data = prop_tabX3, aes(y = reorder(sps_temp,desc(orde)), x = pop202)) +
-  geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
-               size = 5, data = table95, alpha = 0.5) +
-  geom_vline(xintercept = 0,
-             col = "gray43",
-             linetype = "dotted",
-             size = 1) +
+ggplot(data = prop_tabX3, aes(x= sps_temp, y = pop202,
+                                color = "white"), size = 2) +
+  coord_flip() +
+  geom_segment(aes(y=lo, yend=up, x=sps_temp, xend=sps_temp),
+               size = 18, data = table95, alpha = 0.3, color = "yellow") +
+  #geom_point() +
+  geom_hline(yintercept = 0, col = "gray43", size = 0.8) +
+  geom_hline(yintercept = -0.3, col = "gray43", linetype = "dotted", size = 0.8) +
+  #geom_hline(yintercept = 0.3, col = "gray43", linetype = "dotted", size = 0.8) +
+  geom_boxplot(width = 0.6, fill = "white", lwd=0.4,
+               data = master_pro2, 
+               aes(x= sps_temp, y = pop202),
+               color= "black", size=0.08,
+               outlier.size = 0.5) + #coord_flip() + theme_bw()
   #geom_point(aes(shape = temp, color = temp), size = 2) +
-  geom_violin(aes(y = reorder(sps_temp,desc(orde)), x = pop202, color = temp))+
-  geom_boxplot(width=0.1) + 
-  # facet_wrap(~temp) +
+  #geom_boxplot() + 
+  #facet_wrap(~temp) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        #legend.title = element_blank(),
-        legend.position = "none",
+        legend.title = element_blank(),
+        legend.position="none",
         #legend.justification = "right",
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
+        #axis.title.x = element_blank(),
         legend.title.align = 0.5,
-        plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  #scale_x_continuous(breaks = seq(-3, 1, 0.5),
-  #                   limits = c(-3, 1, 0.5)) +
-  geom_point(data = master_full_per, aes(y = sps_temp, x = pop202,
-                                         shape = temp2, color = temp2
-  ), size = 3) +
-  labs(title="Simulation") +
-  geom_vline(xintercept = -0.3,
-             col = "gray43",
-             size = 1) +
-  geom_vline(xintercept = 0.3,
-             col = "gray43",
-             size = 1)
-  #coord_flip() +
-  #scale_y_discrete(limits=rev)
+        plot.title = element_text(hjust = 0.5)) +
+  geom_point(data = master_full_per, 
+             aes(x= sps_temp, y = pop202,
+                 shape = temp, color = temp), size = 4, alpha = 0.95) +
+  scale_shape_manual(values=c("t1" = 16,
+                              "t2" = 17,
+                              "t3" = 15)) +
+  scale_fill_manual(values=c("olivedrab4",
+                             "violetred",
+                             "darkorange3")) +
+  scale_color_manual(values = c("t1" = "olivedrab4",
+                                "t2" = "violetred",
+                                "t3" = "darkorange3"),
+                     labels = c("t1" = "0.2",
+                                "t2" = "0.5",
+                                "t3" = "0.8"),
+                     name = "Temperature\nQuantiles") +
+  scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3.37,0.05)
+  ) +
+  scale_x_discrete(labels = c("0.2", "0.5", "0.8")) +
+  labs(title="Simulation analysis") +
+  ylab("Log(Not infested route \n      Infested route)")+
+  xlab("Temperature quantiles \n")
+
+dev.off()
