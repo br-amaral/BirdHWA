@@ -240,25 +240,25 @@ master_pro2 <- master_pro2 %>%
 table95 <- master_pro2 %>% 
   dplyr::select(species, sps_temp, up, lo) %>% 
   distinct() 
-table95[which(table95$species == "CERW"), 3:4] <- matrix(c(-3.5,2,-3.5,2,-3.5,2), nrow = 3, byrow = T)
+table95[which(table95$species == "CERW"), 3:4] <- matrix(rep(c(-3.37,1.6),3), nrow = 3, byrow = T)
 
 # Export figure ----------------------
-svg(glue("Figures/FigS4/permutation.svg"), 
-    width = 8.9, height = 6.3)
+svg(glue("Figures/FigS4/permutation2.svg"), 
+    width = 10, height = 6.3)
 
 ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 color = "white"), size = 2) +
   geom_segment(aes(y=lo, yend=up ,x=sps_temp, xend=sps_temp),
-               size = 5, data = table95, alpha = 0.5) +
+               size = 4, data = table95, alpha = 0.3, color = "yellow") +
   geom_hline(yintercept = 0,
              col = "gray43",
-             size = 0.8, linetype = "dotted",) +
+             size = 0.8) +
   geom_hline(yintercept = -0.3,
              col = "gray43",
-             size = 0.8) +
+             size = 0.8, linetype = "dotted") +
   geom_hline(yintercept = 0.3,
              col = "gray43",
-             size = 0.8) +
+             size = 0.8, linetype = "dotted") +
   geom_boxplot(width = 0.75, fill = "white",
                data = master_pro2, 
                aes(x= sps_temp, y = prop),
@@ -267,11 +267,10 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         legend.title = element_blank(),
-        legend.position = "right",
-        legend.justification = "right",
+        legend.position="none",
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
-        axis.title.x = element_blank(),
+        #axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.title.align = 0.5,
         plot.title = element_text(hjust = 0.5)) +
@@ -284,7 +283,7 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
   scale_fill_manual(values=c("olivedrab4",
                              "violetred",
                              "darkorange3")) +
-  scale_color_manual(values = c("tt1" = "olivedrab3",
+  scale_color_manual(values = c("tt1" = "olivedrab4",
                                 "tt2" = "palevioletred2",
                                 "tt3" = "tan1"),
                      labels = c("tt1" = "0.2",
@@ -292,12 +291,14 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 "tt3" = "0.8"),
                      name = "Temperature\nQuantiles") +
   labs(title="Permutation analysis") +
-  scale_y_continuous(breaks = as.numeric(seq(-3,2, by = 1)),
-                     limits = c(-3.5,2)) +
+  ylab("Log(Not infested route \n      Infested route)") +
+  scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3.37,1.6)) +
   scale_x_discrete(labels = c("\n", "WOTH", "\n", "\n", "REVI", "\n", "\n", "WBNU", "\n", "\n", "SCTA", "\n",
                               "\n", "EAPH", "\n", "\n", "CERW", "\n", "\n", "BLJA", "\n", "\n", "RBNU", "\n",
                               "\n", "MAWA", "\n", "\n", "HETH", "\n", "\n", "BTNW", "\n", "\n", "BLBW", "\n",
                               "\n", "BHVI", "\n", "\n", "ACFL", "\n")) + 
-  coord_flip() 
+  coord_flip() +
+  ylab("Log(Not infested route       Infested route)") 
+
 
 dev.off()
