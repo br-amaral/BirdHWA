@@ -230,7 +230,7 @@ master_pro2 <- master_pro2 %>%
     lo = mean(prop) - ((1.96*sqrt(var(prop))))) %>% 
   ungroup() %>% 
   mutate(species_num = as.numeric(ord),
-         stripe = factor(ifelse(ord %% 2 == 0, 1, 0)),
+         stripe = factor(ifelse(species_num %% 2 == 0, 1, 0)),
          species_num2 = seq(1, nrow(.),1))
 
 table95 <- master_pro2 %>% 
@@ -245,7 +245,7 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                                 color = "white"), size = 2) +
   coord_flip() +
   geom_segment(aes(y=lo, yend=up, x=sps_temp, xend=sps_temp),
-               size = 5, data = table95, alpha = 0.3, color = "yellow") +
+               size = 4, data = table95, alpha = 0.3, color = "yellow") +
   #geom_point() +
   geom_hline(yintercept = 0, col = "gray43", size = 0.8) +
   geom_hline(yintercept = -0.3, col = "gray43", linetype = "dotted", size = 0.8) +
@@ -255,6 +255,11 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
                aes(x= sps_temp, y = prop),
                color= "black", size=0.08,
                outlier.size = 0.5) + #coord_flip() + theme_bw()
+  #geom_boxplot(width = 0.75, fill = "white",
+  #             data = master_pro2, 
+  #             aes(x= sps_temp, y = prop),
+  #             color= "black",weight = 10, alpha = 0.7) + 
+  
   #geom_point(aes(shape = temp, color = temp), size = 2) +
   #geom_boxplot() + 
   #facet_wrap(~temp) +
@@ -266,7 +271,7 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
         #legend.justification = "right",
         #legend.margin=margin(0,0,0,0),
         #legend.box.margin=margin(-5,0,-5,-7),
-        axis.title.x = element_blank(),
+        #axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.title.align = 0.5,
         plot.title = element_text(hjust = 0.5)) +
@@ -276,10 +281,10 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
   scale_shape_manual(values=c("tt1" = 16,
                               "tt2" = 17,
                               "tt3" = 15)) +
-  scale_fill_manual(values=c("blue4",
+  scale_fill_manual(values=c("olivedrab4",
                              "violetred",
                              "darkorange3")) +
-  scale_color_manual(values = c("tt1" = "blue4",
+  scale_color_manual(values = c("tt1" = "olivedrab4",
                                 "tt2" = "violetred",
                                 "tt3" = "darkorange3"),
                      labels = c("tt1" = "0.2",
@@ -289,6 +294,7 @@ ggplot(data = master_full2, aes(x= sps_temp, y = prop,
   scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3.37,1.6)
   ) +
   labs(title="Sensitivity analysis") +
+  ylab("Log(Not infested route \n      Infested route)") +
   scale_x_discrete(labels = c("\n", "WOTH", "\n", "\n", "REVI", "\n", "\n", "WBNU", "\n", "\n", "SCTA", "\n",
                               "\n", "EAPH", "\n", "\n", "CERW", "\n", "\n", "BLJA", "\n", "\n", "RBNU", "\n",
                               "\n", "MAWA", "\n", "\n", "HETH", "\n", "\n", "BTNW", "\n", "\n", "BLBW", "\n",
