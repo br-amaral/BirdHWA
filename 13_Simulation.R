@@ -290,10 +290,12 @@ prop_tabX3 <- left_join(prop_tabX2, temp_order, by = "temp") %>%
 
 master_pro2 <- prop_tabX3 %>% 
   rename(species = Species) %>% 
+  group_by(temp) %>% 
   mutate(#up = mean(prop) + ((1.96*sqrt(var(prop) / length(prop)))),
     #lo = mean(prop) - ((1.96*sqrt(var(prop) / length(prop)))),
     up = mean(pop202) + ((1.96*sqrt(var(pop202)))),
-    lo = mean(pop202) - ((1.96*sqrt(var(pop202))))) 
+    lo = mean(pop202) - ((1.96*sqrt(var(pop202))))) %>% 
+  ungroup()
 
 table95 <- master_pro2 %>% 
   dplyr::select(species, sps_temp, up, lo) %>% 
@@ -347,7 +349,7 @@ ggplot(data = prop_tabX3, aes(x= sps_temp, y = pop202,
                                 "t2" = "0.5",
                                 "t3" = "0.8"),
                      name = "Temperature\nQuantiles") +
-  scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3.37,0.05)
+  scale_y_continuous(breaks = c(-3,-2,-1,0,1), limits  = c(-3,0.05)
   ) +
   scale_x_discrete(labels = c("0.2", "0.5", "0.8")) +
   labs(title="Simulation analysis") +
