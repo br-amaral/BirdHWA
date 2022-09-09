@@ -243,7 +243,7 @@ table95 <- master_pro2 %>%
 table95[which(table95$species == "CERW"), 3:4] <- matrix(rep(c(-3.37,1.6),3), nrow = 3, byrow = T)
 
 # Export figure ----------------------
-svg(glue("Figures/FigS4/permutation2.svg"), 
+svg(glue("Figures/FigS4/permutation.svg"), 
     width = 10, height = 6.3)
 
 ggplot(data = master_full2, aes(x= sps_temp, y = prop,
