@@ -1,4 +1,5 @@
-# xx_ get final dataset
+# 18_finalDataset
+# get final dataset numbers
 
 # Input: 
 #        /data/hexmap.graph
@@ -12,12 +13,15 @@
 library(INLA)
 library(tidyverse)
 library(glue)
+library(fs)
 
 set.seed(10)
+HEXAGON_PATH <- path("data/route_hex.rds")
+SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
+FIPSROU_DATA_PATH <- path("data/RouteFips.csv")
 
-SPECIES_DATA_PATH <- "data/src/sps_list.csv"
 sps_list <- read_csv(SPECIES_DATA_PATH)
-FIPSROU_DATA_PATH <- "data/RouteFips.csv"
+route_hex <- read_rds(HEXAGON_PATH)
 
 roufip <- read_csv(FIPSROU_DATA_PATH, col_types = list(col_double(), col_character()))
 
@@ -46,6 +50,25 @@ for(i in 1:length(sps_list$SpeciesCode)) {
   BIRD <- rbind(BIRD,finaldat(sps_list$SpeciesCode[i]))
   
 }
+
+BIRD %>% 
+  group_by(SpeciesCode) %>% 
+  summarise(Total = sum(SpeciesTotal))
+BIRD %>% 
+  summarise(Total = sum(SpeciesTotal)) 
+
+table(BIRD$SpeciesCode)
+sum(table(BIRD$SpeciesCode))
+
+BIRD %>% 
+  dplyr::select(SpeciesCode, RouteId) %>% 
+  distinct() %>% 
+  group_by(SpeciesCode) %>% 
+  summarise(routes = n())
+
+length(unique(BIRD$RouteId))
+
+length(unique(BIRD$Year))
 
 BIRD2 <- BIRD %>% 
   distinct() %>% 
