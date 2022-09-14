@@ -4,6 +4,7 @@
 library(tidyverse)
 library(fs)
 
+colnmaes <- colnames
 
 SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
 WAIC_BEST_PATH <- path("data/waicbest.rds")
@@ -46,15 +47,46 @@ for(j in 1:nrow(sps_list)){
 }
 
 meanALL <- summaryALL %>% 
-  filter(esti_type = "mean")
+  filter(esti_type == "mean")
 
 upALL <- summaryALL %>% 
-  filter(esti_type = "up")
+  filter(esti_type == "up")
+colnames(upALL)[6:15] <- glue("up_{colnames(upALL)[6:15]}")
 
 lowALL <- summaryALL %>% 
-  filter(esti_type = "low")
+  filter(esti_type == "low")
+colnames(lowALL)[6:15] <- glue("low_{colnames(lowALL)[6:15]}")
 
+order <- c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
+               "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WOTH")
 
+meanALLpap <- left_join(meanALL, upALL, by = c("model","formula","year","species","waic")) %>% 
+  left_join(., lowALL, by = c("model","formula","year","species","waic")) %>%
+  mutate(over_intercept = data.table::between(0,low_intercept, up_intercept),
+         over_year_offset = data.table::between(0,low_year_offset, up_year_offset),
+         over_infoff = data.table::between(0,low_infoff, up_infoff),
+         over_year_offset_infoff = data.table::between(0,low_year_offset_infoff, up_year_offset_infoff),
+         over_temp_min_scale = data.table::between(0,low_temp_min_scale, up_temp_min_scale),
+         over_year_offset_temp_min_scale = data.table::between(0,low_year_offset_temp_min_scale, up_year_offset_temp_min_scale),
+         over_infoff_temp_min_scale = data.table::between(0,low_infoff_temp_min_scale, up_infoff_temp_min_scale),
+         over_year_offset_infoff_temp_min_scale = data.table::between(0,low_year_offset_infoff_temp_min_scale, up_year_offset_infoff_temp_min_scale),
+         over_NewObserver = data.table::between(0,low_NewObserver, up_NewObserver)
+           ) %>% 
+  relocate(species, model, year, 
+           intercept, low_intercept, up_intercept, over_intercept, # b0
+           year_offset, low_year_offset, up_year_offset, over_year_offset,  # b1
+           infoff, low_infoff, up_infoff, over_infoff,  # b2
+           year_offset_infoff, low_year_offset_infoff, up_year_offset_infoff, over_year_offset_infoff,  # b3
+           temp_min_scale, low_temp_min_scale, up_temp_min_scale, over_temp_min_scale, # b4
+           year_offset_temp_min_scale, low_year_offset_temp_min_scale, up_year_offset_temp_min_scale, over_year_offset_temp_min_scale, # b5
+           infoff_temp_min_scale, low_infoff_temp_min_scale, up_infoff_temp_min_scale, over_infoff_temp_min_scale, # b6
+           year_offset_infoff_temp_min_scale, low_year_offset_infoff_temp_min_scale, up_year_offset_infoff_temp_min_scale, over_year_offset_infoff_temp_min_scale, # b7
+           NewObserver, low_NewObserver, up_NewObserver, over_NewObserver # a
+           ) %>%
+  arrange(factor(species, levels = order)) %>% 
+  dplyr::select(-c(formula,waic,esti_type,up_esti_type,low_esti_type))
+
+write_csv(meanALLpap, file = "Figures/Tables/Table4/table4.csv")
 
 
 
