@@ -18,6 +18,7 @@ library(glue)
 library(fs)
 library(INLA)
 library(tidyselect)
+library(progress)
 
 # Load functions that extract parameters from list on a tibble column
 source("~/Documents/GitHub/BirdHWA/7_extract_fixed_pars.R")
@@ -79,11 +80,41 @@ for(k in 1:nrow(sps_list)){
                                  pars_models_FUNC(2),
                                  pars_models_FUNC(3)))
   
-  (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
-  ifelse(k == 1, waic_best2 <- waic_best, waic_best2 <- rbind(waic_best2, waic_best))
+  waic_best <- summary_results2 %>% 
+    arrange(waic) %>% 
+    select(model, formula, year, species, waic)
+  waic_best2 <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),c(1:4,9)]
+  for(i in 2:nrow(waic_best)) {
+    if((waic_best$waic[i] - waic_best2$waic[1]) < 2) {
+      waic_best2 <- rbind(waic_best2, waic_best[i,])
+    } else { break }
+      }  
+  
+  if(nrow(waic_best2) > 1) {
+    waic_best2 <- waic_best2 %>% 
+      arrange(-model)
+    waic_best2 <- waic_best2[1:2,]
+    if(waic_best2$model[1] == 3 & waic_best2$model[2] == 2 | waic_best2$model[1] == 2 & waic_best2$model[2] == 3) {
+      waic_best2 <- waic_best2 %>% filter(model == 2) } else {print("yep")}
+    
+    if(waic_best2$model[1] == 5 & waic_best2$model[2] == 6 | waic_best2$model[1] == 6 & waic_best2$model[2] == 5) {
+      waic_best2 <- waic_best2 %>% filter(model == 5)} else {print("yep")}
+    
+    if(waic_best2$model[1] == 8 & waic_best2$model[2] == 9 | waic_best2$model[1] == 9 & waic_best2$model[2] == 8) {
+      waic_best2 <- waic_best2 %>% filter(model == 8) } else {print("yep")}
+  
+    if(waic_best2$model[1] == 3 & waic_best2$model[2] == 2 | waic_best2$model[1] == 2 & waic_best2$model[2] == 3 | 
+       waic_best2$model[1] == 5 & waic_best2$model[2] == 6 | waic_best2$model[1] == 6 & waic_best2$model[2] == 5 | 
+       waic_best2$model[1] == 8 & waic_best2$model[2] == 9 | waic_best2$model[1] == 9 & waic_best2$model[2] == 8) {
+      print("yep")
+    } else {waic_best2 <- waic_best2[1,]}
+    
+  } else {print("yep")}
+  
+  if(k == 1) {waic_best3 <- waic_best2} else {waic_best3 <- rbind(waic_best3, waic_best2)}
   
   write_rds(summary_results2, file = glue("data/models_resnew/{species}/summary_results2.rds"))
-  write_rds(waic_best2, file = "data/waicbest.rds")
+  write_rds(waic_best3, file = "data/waicbest.rds")
   rm(summary_results2)
   rm(summary_results)
   rm(species)
