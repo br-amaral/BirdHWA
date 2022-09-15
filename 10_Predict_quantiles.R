@@ -17,8 +17,11 @@ library(tidyverse)
 library(gridExtra)
 library(glue)
 
-SPECIES_DATA_PATH <- "data/src/sps_list.csv"
+SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
+WAIC_PATH <- path("data/waicbest.rds")
+
 (sps_list <- read_csv(SPECIES_DATA_PATH))
+waic_best3 <- read_rds(WAIC_PATH)
 
 # upper limit of the prediction plot of each species
 limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
@@ -206,7 +209,8 @@ for (i in 1:nrow(sps_list)) {
   # Make predictions with the fixed values and temperature quantiles
   summary_results2 <- my_tibble <- read_rds(SUM_RES_PATH)
   
-  (waic_best <- summary_results2[which(summary_results2$waic == min(summary_results2$waic)),1:4])
+  (waic_best <- waic_best3 %>% 
+      filter(species == pull(spsr)))
   
   year_ <- waic_best$year[1]
   mod_ <- waic_best$model[1]
