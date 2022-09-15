@@ -159,7 +159,7 @@ plot.pred <- function(off, pars_tib, pred_tabX, temp, max, temp_n){
   coefs <- rbind(coefs, 
                  c("mod_year", pull(species), as.numeric(mod_), as.numeric(year_), NA))
   
-  write_csv(coefs, file = glue("data/{spsr}_coefs.csv"))
+  write_csv(coefs, file = glue("data/models_resnew/{spsr}/coefs_{spsr}.csv"))
   
   if(as.numeric(mod_) %!in% c(3,6,8,10,11)) {
     plot_preds <- plot_preds %>% 
