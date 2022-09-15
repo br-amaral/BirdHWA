@@ -37,7 +37,7 @@ modyear <- as_tibble(modyear)
 
 for(i in 1:nrow(spslist)){
   spsr <- spslist[i,]
-  modyr <- read_csv(glue("data/models_resnew/{spsr}/{spsr}_coefs.csv")) %>% 
+  modyr <- read_csv(glue("data/models_resnew/{spsr}/coefs_{spsr}.csv")) %>% 
     filter(betas == 'mod_year') %>% 
     rename(mod = mean,
            year = low,
