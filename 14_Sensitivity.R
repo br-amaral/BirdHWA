@@ -16,18 +16,25 @@
 library(INLA)
 library(tidyverse)
 library(glue)
+library(fs)
 
 # load data ------------------------------
 set.seed(10)
-SPECIES_DATA_PATH <- "data/src/sps_list.csv"
+
+SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
 source("5_formulasModels.R")
-sps_list <- read_csv(SPECIES_DATA_PATH)
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
+WAIC_PATH <- path("data/waicbest.rds")
+
+waic_best3 <- read_rds(WAIC_PATH)
+sps_list <- read_csv(SPECIES_DATA_PATH)
 
 # best model and lag for each species info
-yrmod <- read_csv(file = "data/modyear.csv") %>% 
-  rename(species2 = species,
-         model = mod)
+yrmod <- waic_best3 %>% 
+  dplyr::select(species, model, year) %>% 
+  rename(species2 = species) %>% 
+  mutate(control = c(rep(0,7),
+                     rep(1,7)))
 
 # functions -----------------------------
 ## create dataset for a species with the proper year offset
