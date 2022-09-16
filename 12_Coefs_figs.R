@@ -259,7 +259,8 @@ a <- ggplot(data = modyear, aes(x= mod, y= species,
   theme(plot.title = element_text(hjust = 0.5),
         legend.position="none",
         axis.title.y=element_blank(),
-        axis.title.x=element_blank()) 
+        axis.title.x=element_blank(),
+        panel.grid.minor = element_blank()) 
 
 b <- ggplot(data = modyear, aes(x= year, y= species,
                                 shape = factor(control),
@@ -270,8 +271,10 @@ b <- ggplot(data = modyear, aes(x= year, y= species,
                      breaks = seq(1,16,1)) +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position="none",
-        axis.title.y=element_blank(),
-        axis.title.x=element_blank()) 
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        #axis.text.y = element_blank(),
+        panel.grid.minor = element_blank()) 
 
 svg(glue("Figures/Fig2/mod_year.svg"), 
     width = 8, height = 3)
