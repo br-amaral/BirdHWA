@@ -18,11 +18,18 @@ library(glue)
 # Load data -----------------------------
 
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
+WAIC_PATH <- path("data/waicbest.rds")
+
+waic_best3 <- read_rds(WAIC_PATH)
 sps_list <- read_csv(SPECIES_DATA_PATH)
 order <- rev(rep(c("ACFL", "BHVI", "BLBW", "BTNW", "HETH", "MAWA", "RBNU",
                    "BLJA", "CERW", "EAPH", "REVI", "SCTA", "WBNU", "WOTH"), each = 3))
 
-yrmod <- read_csv(file = "data/modyear.csv") 
+yrmod <- waic_best3 %>% 
+  dplyr::select(species, model, year) %>% 
+  rename(species2 = species) %>% 
+  mutate(control = c(rep(0,7),
+                     rep(1,7)))
 perm <- 1000
 
 # Permutation function ----------------------
