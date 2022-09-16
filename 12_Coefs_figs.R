@@ -18,9 +18,10 @@
 library(glue)
 library(tidyverse)
 library(gridExtra)
+library(fs)
 
-SPSLIST_PATH <- glue("data/src/sps_list.csv")
-SPSPRED_PATH <- glue("data/models_resnew/")
+SPSLIST_PATH <- path("data/src/sps_list.csv")
+SPSPRED_PATH <- path("data/models_resnew/")
 
 spslist <- read_csv(SPSLIST_PATH)
 
@@ -46,7 +47,7 @@ for(i in 1:nrow(spslist)){
   
   modyear <- rbind(modyear, modyr)
   
-  coef <- read_csv(glue("data/models_resnew/{spsr}/{spsr}_coefs.csv")) %>% 
+  coef <- read_csv(glue("data/models_resnew/{spsr}/coefs_{spsr}.csv")) %>% 
     mutate(mean = ifelse(is.na(low), NA, mean)) %>% 
     dplyr::select(mean,low,up) %>% 
     t() %>% 
@@ -71,7 +72,7 @@ sps_coefs_overlap[,2:10] <- NA
 
 sps_coefs$control[((7*3)+1):(nrow(sps_coefs))] <- 1
 
-modyear %>% 
+modyear <- modyear %>% 
   mutate(control = 0)
 
 modyear$control <- c(rep(0,7),rep(1,7))
@@ -277,7 +278,7 @@ svg(glue("Figures/Fig2/mod_year.svg"),
 grid.arrange(a,b, ncol = 2)
 dev.off()
 
-write_csv(modyear, file = "data/modyear.csv")
+#write_csv(modyear, file = "data/modyear.csv")
  
 ## table
 tableB <- left_join(modyear, sps_coefs2, by = c("species","control"))
@@ -298,4 +299,4 @@ tableB <- tableB %>%
 
 tableB <- tableB[match(rev(order), tableB$species),]
 
-write_csv(tableB, file='data/coef_tab.csv')
+write_csv(tableB, file='Figures/Tables/Table4/coef_tab.csv')
