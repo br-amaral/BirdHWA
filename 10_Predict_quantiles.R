@@ -16,6 +16,7 @@
 library(tidyverse)
 library(gridExtra)
 library(glue)
+library(fs)
 
 SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
 WAIC_PATH <- path("data/waicbest.rds")
@@ -25,7 +26,7 @@ waic_best3 <- read_rds(WAIC_PATH)
 
 # upper limit of the prediction plot of each species
 limits <- c(2, 1.6, 2, 3, 0.7, 0.5, 1, 6,
-            4, 0.4, 21, 8.5, 16, 35)
+            4, 0.4, 21.1, 8.5, 16, 35)
 
 # functions ---------------------------------------------
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -243,16 +244,15 @@ for (i in 1:nrow(sps_list)) {
            # infoff: 'infested' route according to the delay in the effect (offset)
            infoff = ifelse(year_offset <= 0, 0, ifelse(year_offset > 0, 1, NA))) 
   
-  ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
-    geom_point() +
-    geom_smooth(aes(fill = Infested)) +
-    ggtitle("-20 e +20 filtro") +
-    theme_bw()
+  #ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal, colour = Infested)) +
+    #geom_point() +
+    #geom_smooth(aes(fill = Infested)) +
+    #ggtitle("-20 e +20 filtro") +
+    #theme_bw()
   
-  ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
-    #  geom_point() +
-    geom_smooth() +
-    ggtitle(species) + xlim(-20,20) 
+  #ggplot(BIRDx, aes(x = year_offset, y = SpeciesTotal)) +
+    #geom_smooth() +
+    #ggtitle(species) + xlim(-20,20) 
   
   x <- as.numeric(as.matrix(BIRDx[which(BIRDx$year_offset<10),1]))
   
