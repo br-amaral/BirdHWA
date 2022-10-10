@@ -86,9 +86,8 @@ run_sensi <- function(species) {
   
   BIRDtab2 <- create_data(offsets, BIRDtab)
   
-  routes <- BIRDtab2 %>% select(RouteId) %>% distinct() %>% arrange()
-  #routes <- routes[-189,]
-  
+  routes <- BIRDtab2 %>% dplyr::select(RouteId) %>% distinct() %>% arrange()
+
   dir.create(glue("data/models_resnew/{species}/sensi"))
   intercept <- matrix(NA, nrow = nrow(routes), ncol = 3) %>%
     as_tibble()
@@ -108,9 +107,8 @@ run_sensi <- function(species) {
     year_offset.temp_min_scale <- infoff.temp_min_scale <-  year_offset.infoff.temp_min_scale <- intercept
   off <- offsets
   
-  #routes <- routes[-which(routes$RouteId == 90005),]
-  #routes <- routes[-which(routes$RouteId == 90006),]
-  
+
+  routes <- routes[-which(routes$RouteId == 90005),]
   # remove one route at the time
   for(i in 1:nrow(routes)){
     
