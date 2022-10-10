@@ -15,7 +15,7 @@
 library(INLA)
 library(tidyverse)
 library(glue)
-librarty(fs)
+library(fs)
 
 # import datasets and source code -----------------------------
 source("5_formulasModels.R")
@@ -320,6 +320,8 @@ for(i in 1:nrow(sps_list)){
   species <- sps_list[i,]
   run_perm(species = species, perm = 1000) 
 }
+
+## did not do mawa
 
 # troubleshooting: ----------------------------------
 #   error on loop, use the data/models_resnew/{species}/perm/premperm.rds file 
