@@ -57,7 +57,7 @@ ________________________________________________________________________________
 ## Data for the change in trend after infestation model:
 All the bird and hemlock woolly adelgid invasion data are publicly available.
 [BBS data](https://www.pwrc.usgs.gov/bbs/rawdata/) was downloaded as cvs, adelgid infestation shape files were requested to the USDA Forest Service, and temeprature data from WorldClim was downloaded using the R package raster (version 3.4-13). 
-The following files are the exact same files that are publicly available (3, 6), have been intersected with one another in ArcGis (2, 4), or been created for this analysis (1, 5 and 7):
+The following files are the exact same files that are publicly available (3, 6), have been intersected with one another in ArcGis (2, 4), or been created for this analysis (1, 5 and 7). They are all located in data/src folder:
 
 **1. HexMap:** folder with shape file of hexagon mesh of the study area (hexagons.shp).
 
