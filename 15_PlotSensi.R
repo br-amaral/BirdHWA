@@ -16,7 +16,7 @@ library(tidyverse)
 library(glue)
 library(magrittr)
 library(fs)
-library(ggforestplot)
+#library(ggforestplot)
 
 # Load data -----------------------------
 SPECIES_DATA_PATH <- "data/src/sps_list.csv"
