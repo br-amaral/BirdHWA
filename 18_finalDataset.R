@@ -1,6 +1,6 @@
-# 18_finalDataset
+# 18_finalDataset  --------------------------------------------------------------
 # get final dataset numbers
-
+#
 # Input: 
 #        /data/hexmap.graph
 #        data/src/sps_list.csv  
@@ -9,7 +9,9 @@
 # Output: 
 #        data/models_res/{species} (folder)
 #        data/models_res/{species}/{name}.rds (files)
+#
 
+# load packages --------------------------------------
 library(INLA)
 library(tidyverse)
 library(glue)
