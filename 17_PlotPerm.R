@@ -1,14 +1,15 @@
-# PERMUTATION PLOT
-# Plot the histograms of the permutation analysis plus the results of the 'regular' model
-
-# Input:
-#   data/src/sps_list.csv: list of species being analysed 
-#   data/modyear.csv: best model and offset year for each species
-#   data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients for each iteration of the permutation analysis
-#   data/models_resnew/{species}/{species}_t{1, 2 or 3}preds.csv: predictions for populations for each temperature quantile 
-#                                                                    according to the best model and year offset
-# Output:
-#   Figures/FigS4/permutation.svg": histogram of predictions of all permutation iterations contrasted with 'regular' results
+# 17_PlotPerm ----------------------------------------------------
+# figure S4
+# create a plot with the predictions of the sensitivity analysis plus the results of the full dataset.
+#
+# Input:   data/src/sps_list.csv: list of species being analysed 
+#          data/modyear.csv: best model and offset year for each species
+#          data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients for each iteration of the permutation analysis
+#          data/models_resnew/{species}/{species}_t{1, 2 or 3}preds.csv: predictions for populations for each temperature quantile 
+#                                                                        according to the best model and year offset
+#
+# Output:  Figures/FigS4/permutation.svg": histogram of predictions of all permutation iterations contrasted with 'regular' results
+#
 
 # Load packages -------------------------
 library(ggplot2)

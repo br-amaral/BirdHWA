@@ -1,3 +1,15 @@
+# 13_Simulation --------------------------------------------------------
+# R code to simulate data for the hermit thrush according to the parameters for the best model
+#  for the species. We refit the model for every simulation generated and generate figure S5
+#
+# Input:  data/species/{species}.rds: species dataset used to run the models
+#         data/hexmap.graph: 
+#
+# Output: data/models_resnew/{species}/sims{species}.rds: 
+#         Figures/FigS5/simulation.svg
+# 
+
+# load libraries ---------------------
 library(lme4)
 library(tidyverse)
 library(dummies)

@@ -1,8 +1,10 @@
-# 1_createSpace
-
-# Input: hexagons: hexagon shape file, spatial position and FID of each cell
-#                  matrix with each route and its FID
-# Output: route_hex.csv: matrix with each route and the hexagon number where it is
+# 1_createSpace ---------------------------------------------------------------------------
+# R code to assign each BBS route to a hexagon from the mesh shape file according to its geographical location.
+#
+# Input:  data/src/HexMap/hexagons: hexagon shape file, spatial position and FID of each cell
+#         data/src/route_hex.csv: matrix with each route and its FID
+# Output: data/route_hex.csv: matrix with each route and the hexagon number where it is
+#
 
 library(sp)
 library(spdep)

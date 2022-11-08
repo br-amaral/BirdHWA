@@ -1,8 +1,11 @@
-# 2_combineData ----------------------------------      
-# combine the BBS database with the HWA database
-
+# 2_combineData ---------------------------------------------------------------------------
+# R code to combine the BBS database with the HWA database. BBS data from all 22 states with the Eastern hemlock trees were used (Alabama,
+#  Connecticut, Delaware, Georgia, Kentucky, Maine, Maryland, Massachusetts, Michigan, North Carolina, New Hampshire, New Jersey,
+#  New York, Ohio, Rhode Island, South Carolina, Tennessee, Vermont, Virginia, West Virginia, Washington, Wisconsin). Hemlock woolly adelgid 
+#  infestation data were extracted from a shape file with county level and year information about adelgid status.
+#
 # Input: 
-#   StateData: folder with matrices from BBS with bird data for individual states
+#   StateData: folder with .cvs matrices from BBS with bird data for individual states from BBS
 #   infestations.rds: routes with information of when they were infested
 #   weather.csv: matrix with information regarding the observer
 #   route_coor.csv: matrix with xy coordinates of the routes

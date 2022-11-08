@@ -1,13 +1,14 @@
-# 4_singleSps ----------------------------------      
-# get data for only the species that I'm interested in analysing, and add no detections (zeros) for years
-#   where the species was not found but was previously found
-
+# 4_singleSps ---------------------------------------------------------------------------
+# get data for only the species that I'm interested in analyzing, and add no detections (zeros) for years
+#   where the species was not found but was previously found, and create species specific tibbles
+#
 # Input: 
 #   data/src/sps_list.csv: klist of hemlock associates and control species used in the analysis
 #   data/BirdHWA_2.rds: bird dataset with info from BBS and HWA created by 3_combineData       
-
+#
 # Output: 
 #   data/species/{species}.rds: BirdHWA for each species with zeros
+#
 
 library(purrr)
 library(tidyverse)

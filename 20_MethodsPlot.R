@@ -1,3 +1,6 @@
+# 20_MethodsPlot
+# create a 'broken stick' plot to explain model in presentations
+
 library(ggplot2)
 library(SiZer)
 library(ggtext)

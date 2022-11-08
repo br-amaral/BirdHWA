@@ -1,9 +1,11 @@
-# 5_formulasModels.R
-#   script with all 11 models created to look at relationship of birds and
-#     temperature, infestation, etc
+# 5_formulasModels ---------------------------------------------------------------------------
+# script with all 11 models created to look at relationship of birds and
+#  temperature and infestation, considering space, changes in intercept and 
+#  slope, and delay after infestation.
+#
 
-# MODELS WITH TEMPERATURE:  --------------------
-## model 1 (full model) --------------------
+# MODELS WITH TEMPERATURE:  --------------------------------------------------------
+## model 1 (full model) ------------------------------------------------------------
 formula1 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -17,7 +19,7 @@ formula1 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-## model 2: immediate effect --------------------
+## model 2: immediate effect -------------------------------------------------------
 formula2 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -29,7 +31,7 @@ formula2 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-## model 3: long-term effect --------------------
+## model 3: long-term effect --------------------------------------------------------
 formula3 <- SpeciesTotal ~ 1 + 
   year_offset + 
   year_offset : infoff +
@@ -41,8 +43,8 @@ formula3 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
-# NO EFFECT OF TEMPERATURE ON INFESTATION --------------------
-## model 4 --------------------
+# NO EFFECT OF TEMPERATURE ON INFESTATION -------------------------------------------
+## model 4 --------------------------------------------------------------------------
 formula4 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -54,7 +56,7 @@ formula4 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-## model 5 ------------------------------
+## model 5 --------------------------------------------------------------------------
 formula5 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -65,7 +67,7 @@ formula5 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)
 
-## model 6 ------------------------------
+## model 6 --------------------------------------------------------------------------
 formula6 <- SpeciesTotal ~ 1 + 
   year_offset + 
   year_offset : infoff +
@@ -76,8 +78,8 @@ formula6 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-# MODELS WITH NO TEMPERATURE:  ------------------------------
-## model 7------------------------------
+# MODELS WITH NO TEMPERATURE:  ------------------------------------------------------
+## model 7---------------------------------------------------------------------------
 formula7 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -87,7 +89,7 @@ formula7 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
-## model 8 ----------------------------------------
+## model 8 --------------------------------------------------------------------------
 formula8 <- SpeciesTotal ~ 1 + 
   year_offset + 
   infoff +
@@ -96,7 +98,7 @@ formula8 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
-## model 9 ------------------------------
+## model 9 --------------------------------------------------------------------------
 formula9 <- SpeciesTotal ~ 1 + 
   year_offset + 
   year_offset : infoff +
@@ -105,8 +107,8 @@ formula9 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE) 
 
-# NO INFESTATION EFFECTS
-## model 10 ------------------------------
+# NO INFESTATION EFFECTS ------------------------------------------------------------
+## model 10 -------------------------------------------------------------------------
 formula10 <- SpeciesTotal ~ 1 + 
   year_offset + 
   NewObserver +
@@ -116,7 +118,7 @@ formula10 <- SpeciesTotal ~ 1 +
   f(Year, model="iid") +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
-## model 11 (null model) ------------------------------
+## model 11 (null model) ------------------------------------------------------------
 formula11 <- SpeciesTotal ~ 1 + 
   year_offset + 
   NewObserver +
