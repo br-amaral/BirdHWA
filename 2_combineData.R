@@ -26,7 +26,6 @@ library(sp)
 # files to be sourced paths ---------------------
 STATE_DATA_PATH <- "data/src/StateData"
 INFESTATIONS_PATH <- "data/src/infestations.rds"
-INFESTATIONS_PATH2 <- "data/src/fips_infes2.csv"
 WEATHER_PATH <- "data/src/weather.csv"
 LATLONG_PATH <- "data/src/route_coor.csv"
 HEXAGON_PATH <- "data/route_hex.rds"
