@@ -1,4 +1,5 @@
 # 1_createSpace
+# R code to assign each BBS route to a hexagon from the mesh shape file according to its geographical location.
 
 # Input: hexagons: hexagon shape file, spatial position and FID of each cell
 #                  matrix with each route and its FID
