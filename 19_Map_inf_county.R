@@ -1,3 +1,17 @@
+# 19_Map_inf_county
+# get which counties were used in the analysis, and for how long each has been infested.
+#
+# Input:   data/BirdHWA_2.rds: bird dataset with info from BBS and HWA created by 3_combineData 
+#          data/Fips_route.csv
+#          data/fips_order.csv
+#
+# Output:  data/fips_route2.csv
+#          data/routes_study.csv
+#          data/map_routes_order.csv
+#
+
+BIRD <- readRDS("data/BirdHWA_2.rds")
+
 routes_used_infestime <- 
   BIRD %>% select(RouteId, Year, YearInfested, yrhwa) %>% distinct() %>% mutate(lenInf = 2018 - YearInfested) %>% 
   select(RouteId, lenInf, YearInfested) %>% 
