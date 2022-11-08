@@ -1,4 +1,4 @@
-# 7_extract_fixed_pars.R
+# 7_extract_fixed_pars ---------------------------------------------------------------------------
 # functions to extract parameter estimates for the summary objects of the model results
 
 f_intercept <- function(a){
