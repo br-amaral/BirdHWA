@@ -1,4 +1,4 @@
-# 5_formulasModels.R
+# 5_formulasModels ---------------------------------------------------------------------------
 # script with all 11 models created to look at relationship of birds and
 #  temperature and infestation, considering space, changes in intercept and 
 #  slope, and delay after infestation.
