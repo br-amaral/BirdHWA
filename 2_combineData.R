@@ -1,4 +1,4 @@
-# 2_combineData ----------------------------------      
+# 2_combineData ---------------------------------------------------------------------------
 # R code to combine the BBS database with the HWA database. BBS data from all 22 states with the Eastern hemlock trees were used (Alabama,
 #  Connecticut, Delaware, Georgia, Kentucky, Maine, Maryland, Massachusetts, Michigan, North Carolina, New Hampshire, New Jersey,
 #  New York, Ohio, Rhode Island, South Carolina, Tennessee, Vermont, Virginia, West Virginia, Washington, Wisconsin). Hemlock woolly adelgid 
