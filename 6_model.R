@@ -1,5 +1,6 @@
-# 6_model
-
+# 6_model ---------------------------------------------------------------------------
+# R code to run all 11 models (source 5_formulasModels.R) to all 7 hemlock associate and the 7 
+#  control species for each 15 infestation offsets and save all the outputs for each models.
 # Input: 
 #        /data/hexmap.graph
 #        data/src/sps_list.csv  
@@ -8,6 +9,7 @@
 # Output: 
 #        data/models_res/{species} (folder)
 #        data/models_res/{species}/{name}.rds (files)
+#
 
 library(INLA)
 library(tidyverse)
