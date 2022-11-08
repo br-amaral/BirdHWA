@@ -1,4 +1,5 @@
 # 15_PlotSensi ------------------------------------------------------------
+# figure S3
 # create a plot with the predictions of the sensitivity analysis plus the results of the full dataset.
 #
 # Input:  data/src/sps_list.csv: list of species being analysed 
