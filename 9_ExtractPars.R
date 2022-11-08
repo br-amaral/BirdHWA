@@ -1,13 +1,11 @@
 # 9_ExtractPars ---------------------------------------------------------------------------
 # select the best model and offsets for each species according to WAIC and extract coefficient estimates.
 # 
-# INPUT
-#   data/src/sps_list.csv: list of species analised
-#   7_extract_fixed_pars.R: sourcing functions to extract parameters from list
-#   data/models_resnew/{spsr}/summary_results.rds: results of all models and offsets for a species
+# Input:  data/src/sps_list.csv: list of species analised
+#         7_extract_fixed_pars.R: sourcing functions to extract parameters from list
+#         data/models_resnew/{spsr}/summary_results.rds: results of all models and offsets for a species
 #
-# OUTPUT
-#   data/models_resnew/{species}/summary_results2.rds: coefficient of all models and offsets for a species
+# Output: data/models_resnew/{species}/summary_results2.rds: coefficient of all models and offsets for a species
 #
 
 # Load packages ------------------------------
