@@ -7,6 +7,8 @@
 
 ### Code/Data DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5597600.svg)](https://doi.org/10.5281/zenodo.5597600)
 
+Amaral, BR; Wilson, AM; Blum, J; Miller, DA. Quantifying regional-scale impacts of hemlock woolly adelgid invasion on North American forest bird communities. Global Change Biology xx(xx): xx - xx.
+
 _______________________________________________________________________________________________________________________________________
 
 ## Abstract:
