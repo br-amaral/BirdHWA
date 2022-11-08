@@ -3,10 +3,11 @@
 # code to plot and creat table with info of coefficient estimates and best models.
 #
 # Input:  data/models_resnew/{spsr}/{spsr}_coefs.csv: individual species coefficients
+#         data/models_resnew/{spsr}/coefs_{spsr}.csv
 #
-# Output: data/coef_species.csv: species coefficient estimates table
+# Output: data/coef_species.csv: all species coefficient estimates table
 #         data/modyear.csv: matrix with sps, control, treatment, offset and best model
-#         data/coef_tab.csv: species coefficient estimates and CI, and best model and offset (table 4)
+#         Figures/Tables/Table4/coef_tab.csv: species coefficient estimates and CI, and best model and offset (table 4)
 #         Figures/Fig4/coef_beta2.svg (figure 4)
 #         Figures/Fig4/coef_beta3.svg (figure 4)
 #         Figures/Fig4/coef_beta6.svg (figure 4)
@@ -281,7 +282,7 @@ svg(glue("Figures/Fig2/mod_year.svg"),
 grid.arrange(a,b, ncol = 2)
 dev.off()
 
-#write_csv(modyear, file = "data/modyear.csv")
+write_csv(modyear, file = "data/modyear.csv")
  
 ## table
 tableB <- left_join(modyear, sps_coefs2, by = c("species","control"))

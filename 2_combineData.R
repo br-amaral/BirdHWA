@@ -5,16 +5,16 @@
 #  infestation data were extracted from a shape file with county level and year information about adelgid status.
 #
 # Input: 
-#   StateData: folder with .cvs matrices from BBS with bird data for individual states from BBS
-#   infestations.rds: routes with information of when they were infested
-#   weather.csv: matrix with information regarding the observer
-#   route_coor.csv: matrix with xy coordinates of the routes
-#   route_hex.rds: output of 1_createSpace. matrix with routes and hexagon number
+#   data/src/StateData: folder with .cvs matrices from BBS with bird data for individual states from BBS
+#   data/src/infestations.rds: tibble with information of routes and when they were infested
+#   data/src/weather.csv: matrix with information regarding the observer
+#   data/src/route_coor.csv: matrix with xy coordinates of the routes
+#   data/route_hex.rds: output of 1_createSpace. Matrix with routes and hexagon number
 #   https://(...)speclist.cfm: website with species names and codes
 #        
 # Output: 
-#   BirdHWA.rds: information about species couns in a route in an year
-#   infestations_2.rds: information about which routes were infested at each year
+#   data/BirdHWA.rds: information about species counts in a route in an year
+#   data/infestations_2.rds: information about which routes were infested at each year
 
 # Load packages ---------------------
 library(tidyverse)

@@ -1,14 +1,16 @@
 # 14_Sensitivity -------------------------------------------------
 # Sensitivity test of the best model and offset year. Sensitivity analysis removes each route at a time and re-fit the model
-# Input: same as the 6_model.R:
-#        /data/hexmap.graph
-#        data/src/sps_list.csv  
-#        data/species/{species}.rds
-#        5_formulasModels.R (sourcing)
+# Input: data/hexmap.graph: hexagon shape file, spatial position of hexagon of mesh
+#        data/src/sps_list.csv: list of hemlock associates and control species used in the analysis
+#        data/waicbest.rds: table with the best model number and offset year for each species
+#        data/species/{species}.rds: BirdHWA (bird count data) for each species with zeros (no detections)
 # Output: 
 #        data/models_resnew/{species}/sensi (folder) - sensitivity folder for each species
-#        data/models_resnew/{species}/sensi/coefs_{species}.rds - coefficients for each sensitivity model
+#        data/models_resnew/{species}/sensi/coefs_{species}.rds - coefficients for all sensitivity model
 #        data/models_resnew/{species}/sensi/premsensi.rds - results of all coefficients saved each iteration (if get an error)
+#
+# Source: 5_formulasModels.R
+#
 
 # Load packages ----------------------------
 library(INLA)
@@ -19,8 +21,9 @@ library(fs)
 # load data ------------------------------
 set.seed(10)
 
-SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
 source("5_formulasModels.R")
+
+SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
 hex.adj <- paste0(getwd(),"/data/hexmap.graph")
 WAIC_PATH <- path("data/waicbest.rds")
 

@@ -2,14 +2,16 @@
 # Permutation analysis of the best model and offset year. The permutation analysis randomizes
 #  the infestation year x times and refit the model
 #
-# Input (same as the 6_model):
-#          data/hexmap.graph
-#          data/src/sps_list.csv  
-#          data/species/{species}.rds
-#          5_formulasModels.R (sourcing)
-# Output:  data/models_resnew/{species}/perm (folder): folder to hold permutation analysis results
-#          data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients of each permutation iteration
-#          data/models_resnew/{species}/perm/premperm.rds: coefficients of each iterations saved on the end of each iteration (in case R crashes)
+# Input:  data/hexmap.graph: hexagon shape file, spatial position of hexagon of mesh
+#         data/src/sps_list.csv: list of hemlock associates and control species used in the analysis.
+#         data/species/{species}.rds: BirdHWA (bird counts tibble) for each species with zeros (no detections)
+#         data/waicbest.rds: table with the best model number and offset year for each species
+# Output: data/models_resnew/{species}/perm (folder): folder to hold permutation analysis results
+#         data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients of each permutation iteration
+#         data/models_resnew/{species}/perm/premperm.rds: coefficients of each iterations saved on the end of each iteration (in case R crashes)
+#
+# Source: 5_formulasModels.R
+#
 
 # Load packages --------------------------------------
 library(INLA)

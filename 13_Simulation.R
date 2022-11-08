@@ -3,10 +3,12 @@
 #  for the species. We refit the model for every simulation generated and generate figure S5
 #
 # Input:  data/species/{species}.rds: species dataset used to run the models
-#         data/hexmap.graph: 
+#         data/hexmap.graph:hexagon shape file, spatial position of hexagon of mesh
+#         data/tempquant.csv: temperature quantiles values for HETH simulation (13_Simulation.R)
 #
-# Output: data/models_resnew/{species}/sims{species}.rds: 
-#         Figures/FigS5/simulation.svg
+# Output: data/models_resnew/{species}/sims{species}.rds: tibble with all model results for each simulation
+#         data/models_resnew/{species}/premsims.rds: tibble that incrementally saves each simulation result to an object 
+#         Figures/FigS5/simulation.svg: figure S5
 # 
 
 # load libraries ---------------------
@@ -37,7 +39,7 @@ formula3 <- SpeciesTotal ~ 1 +
   f(hexID, model="bym", graph=hex.adj, constr=TRUE)  
 
 
-hex.adj <- paste0("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/hexmap.graph")
+hex.adj <- paste0("data/hexmap.graph")
 
 X <- BIRDtab %>%  
   # remove 20 ears before and after infestation
@@ -208,7 +210,7 @@ plot_tib <- coefs
 saveRDS(plot_tib, file = glue("data/models_resnew/{species}/sims{species}.rds", sep= ""))  
 
 # Plotting!   -------------------------
-coefs <- plot_tib <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/BirdHWA/data/models_resnew/HETH/simsHETH.rds")
+# coefs <- plot_tib <- readRDS("data/models_resnew/HETH/simsHETH.rds")
 
 TEMPQUANT_PATH <- glue("data/tempquant.csv")
 

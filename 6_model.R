@@ -2,15 +2,19 @@
 # R code to run all 11 models (source 5_formulasModels.R) to all 7 hemlock associate and the 7 
 #  control species for each 15 infestation offsets and save all the outputs for each models.
 #
-# Input:  data/hexmap.graph
-#         data/src/sps_list.csv  
-#         data/species/{species}.rds
-#         5_formulasModels.R (sourcing)  
+# Input:  data/hexmap.graph: hexagon shape file, spatial position of hexagon of mesh
+#         data/src/sps_list.csv: list of all species to be analyzed
+#         data/species/{species}.rds: BirdHWA for each species with zeros (no detections), created
+#                                     by 4_singleSps.R
 #
-# Output: data/models_res/{species} (folder)
-#         data/models_res/{species}/{name}.rds (files)
+# Output: data/models_resnew/{species}: folder to hold all model estimates of a species
+#         data/models_resnew/{species}/{species}_model{i}_{off}yrs.rds: model results of a species for an 
+#                                                                    offset and model number
+#
+# Source: 5_formulasModels.R
 #
 
+# Load packages ---------------------
 library(INLA)
 library(tidyverse)
 library(glue)

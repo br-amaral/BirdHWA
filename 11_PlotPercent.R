@@ -2,7 +2,8 @@
 # figure 3 
 # make plot of percent of population change after 20 years of infestation
 #
-# Input: "data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv" for each species
+# Input:  data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv:  matrix with species predictions for -10 to 20 years in different temperatures
+#         data/src/sps_list.csv: list of all species analyzed
 #
 # Output: plot of population rate of change for each temperature quantile
 #

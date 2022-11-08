@@ -1,14 +1,10 @@
 # 18_finalDataset  --------------------------------------------------------------
 # get final dataset numbers
 #
-# Input: 
-#        data/hexmap.graph
-#        data/src/sps_list.csv  
-#        data/species/{species}.rds
-#        5_formulasModels.R (sourcing)       
-# Output: 
-#        data/models_res/{species} (folder)
-#        data/models_res/{species}/{name}.rds (files)
+# Input:  data/hexmap.graph
+#         data/src/sps_list.csv: list of hemlock associates and control species used in the analysis
+#         data/species/{species}.rds: BirdHWA (bird counta data) for each species with zeros (no detections)
+#         data/src/RouteFips.csv: table indicating in which FIPS each BBS route is in
 #
 
 # load packages --------------------------------------
@@ -20,11 +16,10 @@ library(fs)
 set.seed(10)
 HEXAGON_PATH <- path("data/route_hex.rds")
 SPECIES_DATA_PATH <- path("data/src/sps_list.csv")
-FIPSROU_DATA_PATH <- path("data/RouteFips.csv")
+FIPSROU_DATA_PATH <- path("data/src/RouteFips.csv")
 
 sps_list <- read_csv(SPECIES_DATA_PATH)
 route_hex <- read_rds(HEXAGON_PATH)
-
 roufip <- read_csv(FIPSROU_DATA_PATH, col_types = list(col_double(), col_character()))
 
 finaldat <- function(species){

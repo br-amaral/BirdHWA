@@ -3,23 +3,24 @@
 #
 # Input:  data/src/HexMap/hexagons: hexagon shape file, spatial position and FID of each cell
 #         data/src/route_hex.csv: matrix with each route and its FID
-# Output: data/route_hex.csv: matrix with each route and the hexagon number where it is
+# Output: data/route_rds.csv: matrix with each route and the hexagon number where it is
 #
 
+# Load packages ---------------------
 library(sp)
 library(spdep)
 library(tidyverse)
 requireNamespace("raster")
 
 # create hexagon map
-HEX_DATA_PATH <- "data/src/HexMap/hexagons"
+HEX_DATA_PATH <- "data/src/HexMap/hexagons.shp"
 ROUTE_DATA_PATH <- "data/src/route_hex.csv"
 
 hexmap <- raster::shapefile(HEX_DATA_PATH)
   
 # plot(hexmap)
-# transform shapefile into adjacency matrix (for CAR model)
-# who is whose neighbour?
+# transform shape file into adjacency matrix (for CAR model)
+# who is whose neighbor?
 temp <- poly2nb(hexmap, row.names= hexmap$Input_FID)
 nb2INLA("hexmap.graph", temp)
 hex.adj <- paste(getwd(),"/data/hexmap.graph", sep="")
@@ -29,7 +30,7 @@ colnames(hexord) <- c("hexID","FID")
 route_hex <- read_csv(ROUTE_DATA_PATH, col_types = cols_only(
   RTENO = col_character(),
   Input_FID = col_number())) %>% 
-  select(RouteId = `RTENO`,
+  dplyr::select(RouteId = `RTENO`,
          FID = `Input_FID`) %>%
   mutate(RouteId = ifelse(nchar(RouteId) != 5,
                           paste0(strrep(0, times = 5 - nchar(RouteId)), RouteId),
@@ -37,7 +38,7 @@ route_hex <- read_csv(ROUTE_DATA_PATH, col_types = cols_only(
                           ))
 
 route_hex <- left_join(route_hex, hexord, by = "FID") %>% 
-  select(`RouteId`,
+  dplyr::select(`RouteId`,
          `hexID`)
 
 saveRDS(route_hex, "data/route_hex.rds")

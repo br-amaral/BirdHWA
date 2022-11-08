@@ -5,9 +5,11 @@
 # Input:  data/src/sps_list.csv: list of evaluated species
 #         data/models_resnew/{species}/summary_results2.rds: tibble with species coefficient estimates for best model and offset
 #         data/species/{species}.rds: species dataset used to run the models
-
+#         data/waicbest.rds: table with the best model number and offset year for each species
+#
 # Output: data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv"): matrix with species predictions for -10 to 20 years in different temperatures
-#         data/{spsr}_coefs.csv: table with species coefficient estimates
+#         data/models_resnew/{spsr}/coefs_{spsr}.csv: table with species coefficient estimates
+#         data/tempquant.csv: temperature quantiles values for HETH simulation (13_Simulation.R)
 #         Figures/FigS2/{species}_tempquant.svg: plot of the distribution of temperature within species range
 #         Figures/FigS1/{species}_preds.svg: plot of species predictions in different temperature quantiles
 #
@@ -324,6 +326,13 @@ for (i in 1:nrow(sps_list)) {
   unique(BIRDtab$sd_tempMi)/100
   
   quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))
+  
+  if(species == "HETH") {
+    temph <- as.data.frame(cbind(t1,t2,t3))
+    colnames(temph) <- c('t1','t2','t3')
+    temph <- as_tibble(temph)
+    write_csv(temph, file = "data/tempquant.csv")
+  }
 
 }
 

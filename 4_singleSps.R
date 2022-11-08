@@ -7,9 +7,11 @@
 #   data/BirdHWA_2.rds: bird dataset with info from BBS and HWA created by 3_combineData       
 #
 # Output: 
-#   data/species/{species}.rds: BirdHWA for each species with zeros
+#   data/species/{species}.rds: BirdHWA (tibble with counts and infestation information) for each 
+#                               species with zeros (no detections)
 #
 
+# Load packages ---------------------
 library(purrr)
 library(tidyverse)
 
