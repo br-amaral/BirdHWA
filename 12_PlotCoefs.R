@@ -1,19 +1,17 @@
 # 12_PlotCoefs -----------------------------------------------------
 # figure 2 and 4
-# code to plot and creat table with info of coefficient estimates and best models
+# code to plot and creat table with info of coefficient estimates and best models.
 #
-# INPUT
-#   data/models_resnew/{spsr}/{spsr}_coefs.csv: individual species coefficients
+# Input:  data/models_resnew/{spsr}/{spsr}_coefs.csv: individual species coefficients
 #
-# OUTPUT
-#   data/coef_species.csv: species coefficient estimates table
-#   data/modyear.csv: matrix with sps, control, treatment, offset and best model
-#   data/coef_tab.csv: species coefficient estimates and CI, and best model and offset (table 4)
-#   Figures/Fig4/coef_beta2.svg (figure 4)
-#   Figures/Fig4/coef_beta3.svg (figure 4)
-#   Figures/Fig4/coef_beta6.svg (figure 4)
-#   Figures/Fig4/coef_beta7.svg (figure 4)
-#   Figures/Fig2/mod_year.svg: plot with best model and year (figure 2)
+# Output: data/coef_species.csv: species coefficient estimates table
+#         data/modyear.csv: matrix with sps, control, treatment, offset and best model
+#         data/coef_tab.csv: species coefficient estimates and CI, and best model and offset (table 4)
+#         Figures/Fig4/coef_beta2.svg (figure 4)
+#         Figures/Fig4/coef_beta3.svg (figure 4)
+#         Figures/Fig4/coef_beta6.svg (figure 4)
+#         Figures/Fig4/coef_beta7.svg (figure 4)
+#         Figures/Fig2/mod_year.svg: plot with best model and year (figure 2)
 #
 
 # Load packages --------------------------------
