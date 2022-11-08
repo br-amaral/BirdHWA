@@ -1,7 +1,5 @@
-# 9_ExtractPars.R --------------------------------
-# extract coefficient estimates and WAIC information from tibble column to different
-#    columns in a tibble
-# select the best model and offsets for each species (plot)
+# 9_ExtractPars ---------------------------------------------------------------------------
+# select the best model and offsets for each species according to WAIC and extract coefficient estimates.
 # 
 # INPUT
 #   data/src/sps_list.csv: list of species analised
