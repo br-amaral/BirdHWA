@@ -1,7 +1,8 @@
-# Predict quantiles
+# Predict quantiles ---------------------------------------------------------------------------
+# R code to use the best model and offset parameters for each species to make predictions of population
+#  numbers for each temperature quantile (0.2, 0.5, 0.8).
+#
 # Input: 
-#   summary_results file for each species
-
 #   data/src/sps_list.csv: list of evaluated species
 #   data/models_resnew/{species}/summary_results2.rds: tibble with species coefficient estimates for best model and offset
 #   data/species/{species}.rds: species dataset used to run the models
@@ -11,6 +12,7 @@
 #   data/{spsr}_coefs.csv: table with species coefficient estimates
 #   Figures/FigS2/{species}_tempquant.svg: plot of the distribution of temperature within species range
 #   Figures/FigS1/{species}_preds.svg: plot of species predictions in different temperature quantiles
+#
 
 # Load packages --------------------------
 library(tidyverse)
