@@ -1,4 +1,4 @@
-# 3_filterData
+# 3_filterData ---------------------------------------------------------------------------
 # R code to filter the BBS bird data that will be used in the analysis. Only routes within the distribution of the
 #  Eastern hemlock trees will be used. Only one type of observation, and one observation per occasion, were kept.
 #
