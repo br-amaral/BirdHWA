@@ -2,7 +2,7 @@
 # get final dataset numbers
 #
 # Input: 
-#        /data/hexmap.graph
+#        data/hexmap.graph
 #        data/src/sps_list.csv  
 #        data/species/{species}.rds
 #        5_formulasModels.R (sourcing)       
