@@ -1,15 +1,15 @@
-# Permutation test of the best model and offset year
-## permutation is to randomize the infestation year x times and refit the model
-
-# Input: same as the 6_model:
-#        /data/hexmap.graph
-#        data/src/sps_list.csv  
-#        data/species/{species}.rds
-#        5_formulasModels.R (sourcing)
-# Output: 
-#        data/models_resnew/{species}/perm (folder): folder to hold permutation analysis results
-#        data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients of each permutation iteration
-#        data/models_resnew/{species}/perm/premperm.rds: coefficients of each iterations saved on the end of each iteration (in case R crashes)
+# 16_Permutation -------------------------------------------
+# Permutation analysis of the best model and offset year. The permutation analysis randomizes
+#  the infestation year x times and refit the model
+#
+# Input (same as the 6_model):
+#          data/hexmap.graph
+#          data/src/sps_list.csv  
+#          data/species/{species}.rds
+#          5_formulasModels.R (sourcing)
+# Output:  data/models_resnew/{species}/perm (folder): folder to hold permutation analysis results
+#          data/models_resnew/{species}/perm/coefs_{species}.rds: coefficients of each permutation iteration
+#          data/models_resnew/{species}/perm/premperm.rds: coefficients of each iterations saved on the end of each iteration (in case R crashes)
 
 # Load packages --------------------------------------
 library(INLA)
