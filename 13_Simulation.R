@@ -1,4 +1,6 @@
 # 13_Simulation --------------------------------------------------------
+# R code to simulate data for the hermit thrush according to the parameters for the best model
+#  for the species. We refit the model for every simulation generated.
 #
 # Input:  data/species/HETH.rds: hermit thrush BBS data formatted
 #         data/hexmap.graph: 
