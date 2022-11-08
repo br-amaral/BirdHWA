@@ -1,4 +1,5 @@
-# 12_Coefs_figs.R
+# 12_PlotCoefs -----------------------------------------------------
+# figure 2 and 4
 # code to plot and creat table with info of coefficient estimates and best models
 #
 # INPUT
@@ -13,6 +14,7 @@
 #   Figures/Fig4/coef_beta6.svg (figure 4)
 #   Figures/Fig4/coef_beta7.svg (figure 4)
 #   Figures/Fig2/mod_year.svg: plot with best model and year (figure 2)
+#
 
 # Load packages --------------------------------
 library(glue)
