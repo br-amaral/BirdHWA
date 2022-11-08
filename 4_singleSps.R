@@ -3,7 +3,7 @@
 #   where the species was not found but was previously found, and create species specific tibbles
 #
 # Input: 
-#   data/src/sps_list.csv: klist of hemlock associates and control species used in the analysis
+#   data/src/sps_list.csv: list of hemlock associates and control species used in the analysis
 #   data/BirdHWA_2.rds: bird dataset with info from BBS and HWA created by 3_combineData       
 #
 # Output: 
