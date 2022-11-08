@@ -8,7 +8,7 @@
 #
 # OUTPUT
 #   data/models_resnew/{species}/summary_results2.rds: coefficient of all models and offsets for a species
-
+#
 
 # Load packages ------------------------------
 library(tidyverse)
