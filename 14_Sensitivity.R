@@ -1,8 +1,6 @@
-# SENSITIVITY -----------------------------
-# Sensitivity test of the best model and offset year
-## sensitivity is to remove each route at a time and re-fit the model
-
-# Input: same as the 6_model:
+# 14_Sensitivity -------------------------------------------------
+# Sensitivity test of the best model and offset year. Sensitivity analysis removes each route at a time and re-fit the model
+# Input: same as the 6_model.R:
 #        /data/hexmap.graph
 #        data/src/sps_list.csv  
 #        data/species/{species}.rds
