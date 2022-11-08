@@ -1,4 +1,5 @@
 # 11_PlotPercent -----------------------------------------------------
+# figure 3 
 # make plot of percent of population change after 20 years of infestation
 #
 # Input: "data/models_resnew/{spsr}/{spsr}_{temp_n}preds.csv" for each species
