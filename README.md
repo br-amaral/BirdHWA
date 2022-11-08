@@ -2,11 +2,12 @@
 
 ### Bruna R. Amaral, Andrew M. Wilson, Julie Blum and David A. Miller
 
-#########################################################################################################
+
 ### Global Change Biology [](https://onlinelibrary.wiley.com/doi/10.1111/gcb.16349)
 
 ### Code/Data DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5597600.svg)](https://doi.org/10.5281/zenodo.5597600)
-#####################################################################################################
+
+Amaral, BR; Wilson, AM; Blum, J; Miller, DA. Quantifying regional-scale impacts of hemlock woolly adelgid invasion on North American forest bird communities. Global Change Biology xx(xx): xx - xx.
 
 _______________________________________________________________________________________________________________________________________
 
@@ -55,7 +56,7 @@ ________________________________________________________________________________
 
 ## Data for the change in trend after infestation model:
 All the bird and hemlock woolly adelgid invasion data are publicly available.
-BBS data[https://www.pwrc.usgs.gov/bbs/rawdata/] was downloaded as cvs, adelgid infestation shape files were requested to the USDA Forest Service, and temeprature data from WorldClim was downloaded using the R package raster (version 3.4-13). 
+[BBS data](https://www.pwrc.usgs.gov/bbs/rawdata/) was downloaded as cvs, adelgid infestation shape files were requested to the USDA Forest Service, and temeprature data from WorldClim was downloaded using the R package raster (version 3.4-13). 
 The following files are the exact same files that are publicly available (3, 6), have been intersected with one another in ArcGis (2, 4), or been created for this analysis (1, 5 and 7):
 
 **1. HexMap:** folder with shape file of hexagon mesh of the study area.
