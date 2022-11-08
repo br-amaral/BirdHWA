@@ -1,3 +1,13 @@
+# 13_Simulation --------------------------------------------------------
+#
+# Input:  data/species/HETH.rds: hermit thrush BBS data formatted
+#         data/hexmap.graph: 
+#
+# Output: data/models_resnew/{species}/sims{species}.rds: 
+#         Figures/FigS5/simulation.svg:
+# 
+
+# load libraries ---------------------
 library(lme4)
 library(tidyverse)
 library(dummies)
