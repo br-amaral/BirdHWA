@@ -1,14 +1,13 @@
-# SENSITIVITY PLOT
-# Plot the histograms of the sensitivity analysis plus the results of the 'regular' model
-
-# Input:
-#   data/src/sps_list.csv: list of species being analysed 
-#   data/modyear.csv: best model and offset year for each species
-#   data/models_resnew/{species}/sensi/coefs_{species}.rds: coefficients for each iteration of the sensitivity analysis
-#   data/models_resnew/{species}/{species}_t{1, 2 or 3}preds.csv: predictions for populations for each temperature quantile 
+# 15_PlotSensi ------------------------------------------------------------
+# create a plot with the predictions of the sensitivity analysis plus the results of the full dataset.
+#
+# Input:  data/src/sps_list.csv: list of species being analysed 
+#         data/modyear.csv: best model and offset year for each species
+#         data/models_resnew/{species}/sensi/coefs_{species}.rds: coefficients for each iteration of the sensitivity analysis
+#         data/models_resnew/{species}/{species}_t{1, 2 or 3}preds.csv: predictions for populations for each temperature quantile 
 #                                                                    according to the best model and year offset
-# Output:
-#   Figures/FigS3/sensi2.svg: histogram of predictions of all sensitivity iterations contrasted with 'regular' results
+# Output:  Figures/FigS3/sensi2.svg: histogram of predictions of all sensitivity iterations contrasted with 'regular' results
+#
 
 # Load packages -------------------------
 library(ggplot2)
