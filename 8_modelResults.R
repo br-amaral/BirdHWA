@@ -1,13 +1,12 @@
 # 8_modelResults ---------------------------------------------------------------------------
 # code for extracting model results from all model outputs that were saved in individual files
 #    and put them in the same tibble, to compare WAIC and select the best model and offset.
-# INPUT
-#   data/src/sps_list.csv: list of all species analysed
-#   data/models_resnew/{species}/{species}_model{model}_{year}yrs.rds: model output for each species, model and offset
 #
-# OUTPUT:
-#   data/models_resnew/{sps}/summary_results.rds: coefficient estimates and WAIC for all models and offsets
-#   data/models_resnew/summary_results.rds: summary for all species together
+# Input:  data/src/sps_list.csv: list of all species analysed
+#         data/models_resnew/{species}/{species}_model{model}_{year}yrs.rds: model output for each species, model and offset
+#
+# Output: data/models_resnew/{sps}/summary_results.rds: coefficient estimates and WAIC for all models and offsets
+#         data/models_resnew/summary_results.rds: summary for all species together
 #
 
 # load packages ----------------------------
