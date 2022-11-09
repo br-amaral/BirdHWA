@@ -3,9 +3,9 @@
 ### Bruna R. Amaral, Andrew M. Wilson, Julie Blum and David A. Miller
 
 
-### Global Change Biology [](https://onlinelibrary.wiley.com/doi/10.1111/gcb.16349)
+### Global Change Biology [](https://onlinelibrary.wiley.com/doi/10.1111/gcb.16349) ADD MY LINK
 
-### Code/Data DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5597600.svg)](https://doi.org/10.5281/zenodo.5597600)
+### Code/Data DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5597600.svg)](https://doi.org/10.5281/zenodo.5597600) ADD MY LINK
 
 Amaral, BR; Wilson, AM; Blum, J; Miller, DA. Quantifying regional-scale impacts of hemlock woolly adelgid invasion on North American forest bird communities. Global Change Biology xx(xx): xx - xx.
 
