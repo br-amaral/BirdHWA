@@ -1,7 +1,7 @@
 # 18_finalDataset  --------------------------------------------------------------
 # get final dataset numbers
 #
-# Input:  data/hexmap.graph
+# Input:  data/hexmap.graph: hexagon shape file, spatial position of hexagon of mesh
 #         data/src/sps_list.csv: list of hemlock associates and control species used in the analysis
 #         data/species/{species}.rds: BirdHWA (bird counta data) for each species with zeros (no detections)
 #         data/src/RouteFips.csv: table indicating in which FIPS each BBS route is in

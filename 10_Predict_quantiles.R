@@ -37,18 +37,18 @@ predict.inla2 <- function(species, modelN, temp, max, temp_n) {
   my_tibble2 <- my_tibble %>% 
     filter(species == species,
            model == modelN) %>% 
-    select(species,
-           model,
-           offset = year,
-           intercept,
-           year_off_t = year_offset,
-           infoff,
-           temp_min_scale,
-           year_offset_infoff,
-           year_offset_temp_min_scale,
-           infoff_temp_min_scale,
-           year_offset_infoff_temp_min_scale,
-           NewObserver) 
+    dplyr::select(species,
+                  model,
+                  offset = year,
+                  intercept,
+                  year_off_t = year_offset,
+                  infoff,
+                  temp_min_scale,
+                  year_offset_infoff,
+                  year_offset_temp_min_scale,
+                  infoff_temp_min_scale,
+                  year_offset_infoff_temp_min_scale,
+                  NewObserver) 
   
   pred_tab2 <- create_pred_off(2)
   pred_tab3 <- create_pred_off(3)
@@ -271,8 +271,8 @@ for (i in 1:nrow(sps_list)) {
   #hist(BIRDx2NO$temp_min_scale)
   
   temps <- rbind(
-    BIRDx2INF %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested),
-    BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% select(temp_min_scale, Infested)
+    BIRDx2INF %>% distinct(RouteId, .keep_all = TRUE) %>% dplyr::select(temp_min_scale, Infested),
+    BIRDx2NO %>% distinct(RouteId, .keep_all = TRUE) %>% dplyr::select(temp_min_scale, Infested)
   )
   
   (t1 <- quantile(BIRDx2INF$temp_min_scale, c(0.2, 0.5, 0.8))[1])
