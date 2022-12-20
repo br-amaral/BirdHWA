@@ -55,7 +55,7 @@ ________________________________________________________________________________
 [19_Map_inf_county.R](19_Map_inf_county.R): get which counties were used in the analysis, and for how long each has been infested.
 
 ## Data for the change in trend after infestation model:
-All the bird and hemlock woolly adelgid invasion data are publicly available. [BBS data](https://www.pwrc.usgs.gov/bbs/rawdata/) were downloaded as a .cvs file from https://www.pwrc.usgs.gov/bbs/index.cfm, adelgid infestation shape files were requested to the USDA Forest Service, and temperature data from WorldClim was downloaded using the R package ‘raster’ (version 3.4-13). The following files are the exact same files that are publicly available BBS (3, 4, 6, 8), have been intersected with adelgid data in ArcGis (2), or been created for this analysis (1, 5 and 7). They are all located in data/src folder:
+All the bird and hemlock woolly adelgid invasion data are publicly available. [BBS data](https://www.pwrc.usgs.gov/bbs/rawdata/) were downloaded as a .cvs file from https://www.pwrc.usgs.gov/bbs/index.cfm, adelgid infestation shape files were requested to the USDA Forest Service, and temperature data from WorldClim were downloaded using the R package ‘raster’ (version 3.4-13). The following files are the exact same files that are publicly available BBS (3, 4, 6, 8), have been intersected with adelgid data in ArcGis (2), or been created for this analysis (1, 5 and 7). They are all located in data/src folder:
 
 **1. HexMap:** folder with shape file of hexagon mesh of the study area (hexagons.shp).
 
