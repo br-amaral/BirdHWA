@@ -4,7 +4,8 @@
 
 ### Biological invasions [](https://) ADD MY LINK
 
-Amaral, BR; Wilson, AM; Blum, J; Miller, DA. Quantifying regional-scale impacts of hemlock woolly adelgid invasion on North American forest bird communities. Biological Invasions xx(xx): xx - xx.
+Amaral, BR; Wilson, AM; Blum, J; Miller, DA. (2023). Quantifying regional-scale impacts of hemlock woolly adelgid invasion on North American forest bird communities. Biological Invasions xx(xx): xx - xx.
+DOI: 10.1007/s10530-023-03156-7   
 
 _______________________________________________________________________________________________________________________________________
 
